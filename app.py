@@ -309,11 +309,18 @@ def show_product_form():
             category_select = st.selectbox(
                 "Category",
                 category_options if category_options else ["+ New Category"],
-                index=default_idx if category_options and default_idx < len(category_options) else 0
+                index=default_idx if category_options and default_idx < len(category_options) else 0,
+                key="product_category_select"
             )
             
             if category_select == "+ New Category":
-                category = st.text_input("New Category Name", placeholder="e.g., WRITING INSTRUMENTS")
+                category = st.text_input(
+                    "New Category Name *", 
+                    placeholder="e.g., WRITING INSTRUMENTS",
+                    key="new_category_input"
+                )
+                if not category:
+                    st.warning("Please enter a category name")
             else:
                 category = category_select
             
@@ -434,6 +441,8 @@ def show_product_form():
         if submit_btn:
             if not sku or not name or not description:
                 st.error("Please fill in all required fields (SKU, Name, Description)")
+            elif not category:
+                st.error("Please select or enter a category")
             else:
                 if existing_product:
                     success = dm.update_product(
