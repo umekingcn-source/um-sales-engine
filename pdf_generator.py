@@ -26,6 +26,22 @@ WHITE = colors.white
 BLACK = colors.black
 GRAY = colors.HexColor("#666666")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_absolute_path(relative_path):
+    """Convert relative path to absolute path for file access."""
+    if not relative_path or not isinstance(relative_path, str):
+        return None
+    if os.path.isabs(relative_path):
+        if os.path.exists(relative_path):
+            return relative_path
+        return None
+    abs_path = os.path.join(BASE_DIR, relative_path)
+    if os.path.exists(abs_path):
+        return abs_path
+    return None
+
 
 def hex_to_color(hex_string):
     """Convert hex color string to ReportLab color."""
@@ -104,9 +120,9 @@ class CatalogPDFGenerator:
         left_x = self.margin
         right_x = self.page_width - self.margin
         
-        logo_path = self.settings.get("logo_path", "")
+        logo_path = get_absolute_path(self.settings.get("logo_path", ""))
         logo_height = 45
-        if logo_path and isinstance(logo_path, str) and os.path.exists(logo_path):
+        if logo_path:
             try:
                 c.drawImage(logo_path, left_x - 5, y_top - logo_height, 
                            width=120, height=logo_height, preserveAspectRatio=True)
@@ -172,9 +188,9 @@ class CatalogPDFGenerator:
         
         img_height = 100
         img_y = y + height - img_height - 10
-        image_path = product.get("image_path", "")
+        image_path = get_absolute_path(product.get("image_path", ""))
         
-        if image_path and isinstance(image_path, str) and os.path.exists(image_path):
+        if image_path:
             try:
                 img_width = width - 20
                 c.drawImage(image_path, x + 10, img_y, 
@@ -248,8 +264,8 @@ class CatalogPDFGenerator:
         c.setLineWidth(1)
         c.line(self.margin, y + 25, self.page_width - self.margin, y + 25)
         
-        logo_path = self.settings.get("logo_path", "")
-        if logo_path and os.path.exists(logo_path):
+        logo_path = get_absolute_path(self.settings.get("logo_path", ""))
+        if logo_path:
             try:
                 c.drawImage(logo_path, self.margin, y - 5, 
                            width=60, height=25, preserveAspectRatio=True)
@@ -319,9 +335,9 @@ class QuotationPDFGenerator:
         """Draw quotation header with company and customer info."""
         y_top = self.page_height - self.margin
         
-        logo_path = self.settings.get("logo_path", "")
+        logo_path = get_absolute_path(self.settings.get("logo_path", ""))
         logo_height = 40
-        if logo_path and os.path.exists(logo_path):
+        if logo_path:
             try:
                 c.drawImage(logo_path, self.margin, y_top - logo_height, 
                            width=80, height=logo_height, preserveAspectRatio=True)
@@ -471,12 +487,12 @@ class QuotationPDFGenerator:
             c.drawCentredString(x_offset + col_widths[0]/2, row_y - 45, product.get("sku", ""))
             x_offset += col_widths[0]
             
-            image_path = product.get("image_path", "")
+            image_path = get_absolute_path(product.get("image_path", ""))
             img_size = 45
             img_x = x_offset + (col_widths[1] - img_size) / 2
             img_y = row_y - row_height + (row_height - img_size) / 2
             
-            if image_path and isinstance(image_path, str) and os.path.exists(image_path):
+            if image_path:
                 try:
                     c.drawImage(image_path, img_x, img_y, width=img_size, height=img_size, 
                                preserveAspectRatio=True)

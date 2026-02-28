@@ -11,6 +11,24 @@ import os
 import data_manager as dm
 import pdf_generator as pdfgen
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_image_path(relative_path):
+    """Convert relative path to absolute path for image display."""
+    if not relative_path or not isinstance(relative_path, str):
+        return None
+    if pd.isna(relative_path):
+        return None
+    if os.path.isabs(relative_path):
+        if os.path.exists(relative_path):
+            return relative_path
+        return None
+    abs_path = os.path.join(BASE_DIR, relative_path)
+    if os.path.exists(abs_path):
+        return abs_path
+    return None
+
 st.set_page_config(
     page_title="U-Meking Sales Engine",
     page_icon="📦",
@@ -202,8 +220,9 @@ def show_product_list():
             col1, col2, col3, col4 = st.columns([1, 3, 1, 1])
             
             with col1:
-                if product["image_path"] and os.path.exists(str(product["image_path"])):
-                    st.image(product["image_path"], width=80)
+                img_path = get_image_path(product.get("image_path"))
+                if img_path:
+                    st.image(img_path, width=80)
                 else:
                     st.markdown("🖼️ No Image")
             
@@ -299,8 +318,10 @@ def show_product_form():
                 help="This is the primary image shown in catalogs and quotations"
             )
             
-            if existing_product and existing_product.get("image_path") and os.path.exists(str(existing_product["image_path"])):
-                st.image(existing_product["image_path"], width=100, caption="Current Main Image")
+            if existing_product:
+                main_img = get_image_path(existing_product.get("image_path"))
+                if main_img:
+                    st.image(main_img, width=100, caption="Current Main Image")
             
             img_col1, img_col2 = st.columns(2)
             with img_col1:
@@ -309,8 +330,10 @@ def show_product_form():
                     type=["jpg", "jpeg", "png"],
                     help="Internal backup only"
                 )
-                if existing_product and existing_product.get("image_path_2") and os.path.exists(str(existing_product.get("image_path_2", ""))):
-                    st.image(existing_product["image_path_2"], width=60, caption="Image 2")
+                if existing_product:
+                    img2 = get_image_path(existing_product.get("image_path_2"))
+                    if img2:
+                        st.image(img2, width=60, caption="Image 2")
             
             with img_col2:
                 image_file_3 = st.file_uploader(
@@ -318,8 +341,10 @@ def show_product_form():
                     type=["jpg", "jpeg", "png"],
                     help="Internal backup only"
                 )
-                if existing_product and existing_product.get("image_path_3") and os.path.exists(str(existing_product.get("image_path_3", ""))):
-                    st.image(existing_product["image_path_3"], width=60, caption="Image 3")
+                if existing_product:
+                    img3 = get_image_path(existing_product.get("image_path_3"))
+                    if img3:
+                        st.image(img3, width=60, caption="Image 3")
             
             packaging_rate = st.number_input(
                 "Packaging Rate (pcs/carton)",
@@ -488,8 +513,9 @@ def show_catalog_creator():
             if product:
                 col_b, col_c = st.columns([1, 3])
                 with col_b:
-                    if product.get("image_path") and os.path.exists(str(product["image_path"])):
-                        st.image(product["image_path"], width=60)
+                    img_path = get_image_path(product.get("image_path"))
+                    if img_path:
+                        st.image(img_path, width=60)
                     else:
                         st.write("🖼️")
                 with col_c:
@@ -623,8 +649,9 @@ def show_quotation_builder():
                 item_col1, item_col2, item_col3, item_col4, item_col5 = st.columns([1, 3, 1, 1, 0.5])
                 
                 with item_col1:
-                    if item.get("image_path") and os.path.exists(str(item["image_path"])):
-                        st.image(item["image_path"], width=50)
+                    item_img = get_image_path(item.get("image_path"))
+                    if item_img:
+                        st.image(item_img, width=50)
                     else:
                         st.write("🖼️")
                 
@@ -855,9 +882,10 @@ def show_settings():
                     st.success("Logo uploaded successfully!")
                     st.rerun()
             
-            if settings.get("logo_path") and os.path.exists(settings["logo_path"]):
+            logo_display_path = get_image_path(settings.get("logo_path"))
+            if logo_display_path:
                 st.markdown("**Current Logo:**")
-                st.image(settings["logo_path"], width=200)
+                st.image(logo_display_path, width=200)
         
         with col2:
             st.markdown("**Brand Color**")

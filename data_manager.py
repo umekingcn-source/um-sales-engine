@@ -210,8 +210,17 @@ def get_product_by_sku(sku: str) -> dict:
     return None
 
 
+def get_absolute_path(relative_path: str) -> str:
+    """Convert relative path to absolute path based on BASE_DIR."""
+    if not relative_path or not isinstance(relative_path, str):
+        return ""
+    if os.path.isabs(relative_path):
+        return relative_path
+    return os.path.join(BASE_DIR, relative_path)
+
+
 def save_product_image(sku: str, uploaded_file) -> str:
-    """Save uploaded image file and return the path."""
+    """Save uploaded image file and return the relative path."""
     init_directories()
     
     ext = os.path.splitext(uploaded_file.name)[1].lower()
@@ -233,7 +242,7 @@ def save_product_image(sku: str, uploaded_file) -> str:
     except Exception as e:
         print(f"Image optimization failed: {e}")
     
-    return filepath
+    return f"assets/images/{filename}"
 
 
 def get_settings() -> dict:
@@ -276,23 +285,25 @@ def save_settings(settings: dict):
 
 
 def save_logo(uploaded_file) -> str:
-    """Save company logo and return the path."""
+    """Save company logo and return the relative path."""
     init_directories()
     
     ext = os.path.splitext(uploaded_file.name)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".gif"]:
         ext = ".png"
     
-    filepath = os.path.join(ASSETS_DIR, f"company_logo{ext}")
+    filename = f"company_logo{ext}"
+    filepath = os.path.join(ASSETS_DIR, filename)
     
     with open(filepath, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
+    relative_path = f"assets/{filename}"
     settings = get_settings()
-    settings["logo_path"] = filepath
+    settings["logo_path"] = relative_path
     save_settings(settings)
     
-    return filepath
+    return relative_path
 
 
 def get_categories() -> list:
