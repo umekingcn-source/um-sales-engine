@@ -77,42 +77,76 @@ class CatalogPDFGenerator:
             products_by_category[cat].append(product)
         
         page_num = 1
-        is_first_page = True
+        header_height = 105
+        footer_height = 40
+        category_banner_height = 28
+        row_height = 240
+        category_spacing = 15
         
-        for category, cat_products in products_by_category.items():
-            products_on_page = []
+        content_top = self.page_height - self.margin - header_height
+        content_bottom = self.margin + footer_height
+        
+        self._draw_header(c, catalog_number, catalog_date, True)
+        current_y = content_top
+        
+        for cat_idx, (category, cat_products) in enumerate(products_by_category.items()):
+            needed_height = category_banner_height + row_height
             
-            for i, product in enumerate(cat_products):
-                products_on_page.append(product)
+            if current_y - needed_height < content_bottom:
+                self._draw_footer(c, page_num)
+                c.showPage()
+                page_num += 1
+                self._draw_header(c, catalog_number, catalog_date, False)
+                current_y = content_top
+            
+            self._draw_category_banner_at(c, category, current_y)
+            current_y -= category_banner_height
+            
+            for row_start in range(0, len(cat_products), 3):
+                row_products = cat_products[row_start:row_start + 3]
                 
-                if len(products_on_page) == 3 or i == len(cat_products) - 1:
-                    self._draw_page(
-                        c, products_on_page, category,
-                        catalog_number, catalog_date,
-                        is_first_page, page_num,
-                        is_first_of_category=(i < 3)
-                    )
+                if current_y - row_height < content_bottom:
+                    self._draw_footer(c, page_num)
                     c.showPage()
                     page_num += 1
-                    is_first_page = False
-                    products_on_page = []
+                    self._draw_header(c, catalog_number, catalog_date, False)
+                    current_y = content_top
+                
+                self._draw_product_row(c, row_products, current_y)
+                current_y -= row_height
+            
+            current_y -= category_spacing
         
+        self._draw_footer(c, page_num)
         c.save()
         buffer.seek(0)
         return buffer
     
-    def _draw_page(self, c, products, category, catalog_number, catalog_date, 
-                   is_first_page, page_num, is_first_of_category):
-        """Draw a single page of the catalog."""
-        self._draw_header(c, catalog_number, catalog_date, is_first_page)
+    def _draw_category_banner_at(self, c, category, y_top):
+        """Draw category section banner at specified Y position."""
+        banner_height = 22
+        y = y_top - 5
         
-        if is_first_of_category:
-            self._draw_category_banner(c, category)
+        c.setFillColor(self.brand_color)
+        c.rect(self.margin, y - banner_height, self.content_width, banner_height, fill=1, stroke=0)
         
-        y_start = self.page_height - 165 if is_first_of_category else self.page_height - 130
-        self._draw_product_grid(c, products, y_start)
+        c.setFillColor(WHITE)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(self.margin + 10, y - 15, category.upper())
+    
+    def _draw_product_row(self, c, products, y_top):
+        """Draw a row of products (up to 3)."""
+        num_cols = 3
+        col_width = self.content_width / num_cols
+        card_height = 230
+        card_padding = 6
         
-        self._draw_footer(c, page_num)
+        for i, product in enumerate(products):
+            col = i % num_cols
+            x = self.margin + col * col_width + card_padding
+            y = y_top - card_height - 5
+            
+            self._draw_product_card(c, product, x, y, col_width - 2 * card_padding, card_height - card_padding)
     
     def _draw_header(self, c, catalog_number, catalog_date, is_first_page):
         """Draw page header with logo and title."""
@@ -154,106 +188,80 @@ class CatalogPDFGenerator:
         c.setLineWidth(2)
         c.line(self.margin, y_top - 100, right_x, y_top - 100)
     
-    def _draw_category_banner(self, c, category):
-        """Draw category section banner."""
-        y = self.page_height - 125
-        banner_height = 22
-        
-        c.setFillColor(self.brand_color)
-        c.rect(self.margin, y - banner_height, self.content_width, banner_height, fill=1, stroke=0)
-        
-        c.setFillColor(WHITE)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(self.margin + 10, y - 15, category.upper())
-    
-    def _draw_product_grid(self, c, products, y_start):
-        """Draw products in a 3-column grid layout."""
-        num_cols = 3
-        col_width = self.content_width / num_cols
-        card_height = 320
-        card_padding = 8
-        
-        for i, product in enumerate(products):
-            col = i % num_cols
-            x = self.margin + col * col_width + card_padding
-            y = y_start - card_height
-            
-            self._draw_product_card(c, product, x, y, col_width - 2 * card_padding, card_height - card_padding)
-    
     def _draw_product_card(self, c, product, x, y, width, height):
         """Draw a single product card."""
         c.setStrokeColor(colors.HexColor("#CCCCCC"))
         c.setLineWidth(0.5)
-        c.roundRect(x, y, width, height, 5, stroke=1, fill=0)
+        c.roundRect(x, y, width, height, 4, stroke=1, fill=0)
         
-        img_height = 100
-        img_y = y + height - img_height - 10
+        img_height = 80
+        img_y = y + height - img_height - 8
         image_path = get_absolute_path(product.get("image_path", ""))
         
         if image_path:
             try:
-                img_width = width - 20
-                c.drawImage(image_path, x + 10, img_y, 
+                img_width = width - 16
+                c.drawImage(image_path, x + 8, img_y, 
                            width=img_width, height=img_height,
                            preserveAspectRatio=True)
             except Exception as e:
                 c.setFillColor(LIGHT_BLUE)
-                c.rect(x + 10, img_y, width - 20, img_height, fill=1, stroke=0)
+                c.rect(x + 8, img_y, width - 16, img_height, fill=1, stroke=0)
                 c.setFillColor(GRAY)
-                c.setFont("Helvetica", 8)
+                c.setFont("Helvetica", 7)
                 c.drawCentredString(x + width/2, img_y + img_height/2, "No Image")
         else:
             c.setFillColor(LIGHT_BLUE)
-            c.rect(x + 10, img_y, width - 20, img_height, fill=1, stroke=0)
+            c.rect(x + 8, img_y, width - 16, img_height, fill=1, stroke=0)
             c.setFillColor(GRAY)
-            c.setFont("Helvetica", 8)
+            c.setFont("Helvetica", 7)
             c.drawCentredString(x + width/2, img_y + img_height/2, "No Image")
         
-        text_y = img_y - 15
+        text_y = img_y - 12
         c.setFillColor(self.brand_color)
-        c.setFont("Helvetica-Bold", 9)
+        c.setFont("Helvetica-Bold", 8)
         
         name = product.get("name", "")
-        if len(name) > 25:
-            name = name[:22] + "..."
-        c.drawString(x + 10, text_y, name)
+        if len(name) > 28:
+            name = name[:25] + "..."
+        c.drawString(x + 8, text_y, name)
+        
+        text_y -= 10
+        c.setFillColor(GRAY)
+        c.setFont("Helvetica", 6)
+        c.drawString(x + 8, text_y, f"({product.get('sku', '')})")
         
         text_y -= 12
-        c.setFillColor(GRAY)
-        c.setFont("Helvetica", 7)
-        c.drawString(x + 10, text_y, f"({product.get('sku', '')})")
-        
-        text_y -= 15
         c.setFillColor(BLACK)
-        c.setFont("Helvetica", 7)
+        c.setFont("Helvetica", 6)
         
         description = product.get("description", "")
-        specs = description.split("\n")[:6]
+        specs = description.split("\n")[:5]
         for spec in specs:
             if spec.strip():
                 spec_text = f"• {spec.strip()}"
-                if len(spec_text) > 45:
-                    spec_text = spec_text[:42] + "..."
-                c.drawString(x + 10, text_y, spec_text)
-                text_y -= 10
+                if len(spec_text) > 48:
+                    spec_text = spec_text[:45] + "..."
+                c.drawString(x + 8, text_y, spec_text)
+                text_y -= 8
         
-        price_y = y + 35
+        price_y = y + 18
         c.setFillColor(self.brand_color)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(x + 10, price_y, f"${product.get('unit_price', 0):.2f}/PCS")
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x + 8, price_y, f"${product.get('unit_price', 0):.2f}/PCS")
         
-        btn_width = 60
-        btn_height = 16
-        btn_x = x + width - btn_width - 10
-        btn_y = price_y - 3
+        btn_width = 50
+        btn_height = 13
+        btn_x = x + width - btn_width - 8
+        btn_y = price_y - 2
         
         c.setFillColor(WHITE)
         c.setStrokeColor(self.brand_color)
-        c.setLineWidth(1)
-        c.roundRect(btn_x, btn_y, btn_width, btn_height, 3, fill=1, stroke=1)
+        c.setLineWidth(0.8)
+        c.roundRect(btn_x, btn_y, btn_width, btn_height, 2, fill=1, stroke=1)
         
         c.setFillColor(self.brand_color)
-        c.setFont("Helvetica-Bold", 7)
+        c.setFont("Helvetica-Bold", 6)
         c.drawCentredString(btn_x + btn_width/2, btn_y + 5, "Learn More")
     
     def _draw_footer(self, c, page_num):
