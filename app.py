@@ -299,30 +299,32 @@ def show_product_form():
             
             existing_categories = dm.get_categories()
             all_categories = list(dict.fromkeys(preset_categories + existing_categories))
-            category_options = all_categories + ["+ New Category"]
+            category_options = ["+ New Category"] + all_categories
             
             if existing_product and existing_product["category"] in all_categories:
-                default_idx = all_categories.index(existing_product["category"])
+                default_idx = all_categories.index(existing_product["category"]) + 1
             else:
-                default_idx = 0 if all_categories else 0
+                default_idx = 1 if all_categories else 0
             
             category_select = st.selectbox(
-                "Category",
-                category_options if category_options else ["+ New Category"],
-                index=default_idx if category_options and default_idx < len(category_options) else 0,
+                "Category (select preset or choose '+ New Category' to type custom)",
+                category_options,
+                index=default_idx,
                 key="product_category_select"
             )
             
-            if category_select == "+ New Category":
-                category = st.text_input(
-                    "New Category Name *", 
-                    placeholder="e.g., WRITING INSTRUMENTS",
-                    key="new_category_input"
-                )
-                if not category:
-                    st.warning("Please enter a category name")
-            else:
+            new_category_input = st.text_input(
+                "Or enter new category name here:",
+                placeholder="Type new category name if '+ New Category' selected above",
+                key="new_category_input"
+            )
+            
+            if new_category_input.strip():
+                category = new_category_input.strip()
+            elif category_select != "+ New Category":
                 category = category_select
+            else:
+                category = ""
             
             unit_price = st.number_input(
                 "Unit Price (USD) *",
