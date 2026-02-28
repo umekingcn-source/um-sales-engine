@@ -276,13 +276,35 @@ def show_product_form():
                 placeholder="e.g., Signature Metal Ballpoint Pen"
             )
             
-            categories = dm.get_categories()
-            category_options = categories + ["+ New Category"]
+            preset_categories = [
+                "New Employee Onboarding Pack",
+                "Coffee / Baking Shop Merch Kit",
+                "Corporate Promotional Package",
+                "Cosmetics Membership Package",
+                "Esports Gaming Exhibition Swag",
+                "Eco-friendly Activity Pack",
+                "Fishing Lure Equipment Set",
+                "Globally Theme Park Water World Resort",
+                "Gym Membership Package",
+                "NGO or Healthcare Charity",
+                "On-site Branding for Large Events",
+                "Outdoor Hiking Gear Set",
+                "Pet Love Package",
+                "Sports Brand Collection Swag",
+                "Souvenir Gift Items",
+                "The Sand-Free Beach Vacation Kit",
+                "Travel Agency VIP Kit",
+                "University Campus Spirit & Alumni Kit",
+            ]
             
-            if existing_product and existing_product["category"] in categories:
-                default_idx = categories.index(existing_product["category"])
+            existing_categories = dm.get_categories()
+            all_categories = list(dict.fromkeys(preset_categories + existing_categories))
+            category_options = all_categories + ["+ New Category"]
+            
+            if existing_product and existing_product["category"] in all_categories:
+                default_idx = all_categories.index(existing_product["category"])
             else:
-                default_idx = 0 if categories else 0
+                default_idx = 0 if all_categories else 0
             
             category_select = st.selectbox(
                 "Category",
