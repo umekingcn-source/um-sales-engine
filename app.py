@@ -466,35 +466,38 @@ def show_catalog_creator():
         else:
             filtered_df = df
         
-        if st.button("Select All"):
-            st.session_state.selected_products = filtered_df["sku"].tolist()
-            st.rerun()
+        all_skus = filtered_df["sku"].tolist()
+        product_options = {row["sku"]: f"{row['sku']} - {row['name']} (${row['unit_price']:.2f})" 
+                          for _, row in filtered_df.iterrows()}
         
-        if st.button("Clear Selection"):
-            st.session_state.selected_products = []
-            st.rerun()
+        selected_skus = st.multiselect(
+            "Select products for catalog",
+            options=all_skus,
+            default=[s for s in st.session_state.selected_products if s in all_skus],
+            format_func=lambda x: product_options.get(x, x),
+            key="catalog_multiselect"
+        )
         
-        for _, product in filtered_df.iterrows():
-            col_a, col_b, col_c = st.columns([0.5, 1, 3])
-            
-            with col_a:
-                is_selected = product["sku"] in st.session_state.selected_products
-                if st.checkbox("", value=is_selected, key=f"cat_sel_{product['sku']}"):
-                    if product["sku"] not in st.session_state.selected_products:
-                        st.session_state.selected_products.append(product["sku"])
-                else:
-                    if product["sku"] in st.session_state.selected_products:
-                        st.session_state.selected_products.remove(product["sku"])
-            
-            with col_b:
-                if product["image_path"] and os.path.exists(str(product["image_path"])):
-                    st.image(product["image_path"], width=60)
-                else:
-                    st.write("🖼️")
-            
-            with col_c:
-                st.markdown(f"**{product['name']}**")
-                st.caption(f"{product['sku']} | ${product['unit_price']:.2f}")
+        st.session_state.selected_products = selected_skus
+        
+        st.markdown("---")
+        st.subheader("Selected Products Preview")
+        
+        for sku in selected_skus[:6]:
+            product = dm.get_product_by_sku(sku)
+            if product:
+                col_b, col_c = st.columns([1, 3])
+                with col_b:
+                    if product.get("image_path") and os.path.exists(str(product["image_path"])):
+                        st.image(product["image_path"], width=60)
+                    else:
+                        st.write("🖼️")
+                with col_c:
+                    st.markdown(f"**{product['name']}**")
+                    st.caption(f"{product['sku']} | ${product['unit_price']:.2f}")
+        
+        if len(selected_skus) > 6:
+            st.caption(f"... and {len(selected_skus) - 6} more products")
     
     with col2:
         st.subheader("Catalog Settings")
@@ -502,51 +505,41 @@ def show_catalog_creator():
         catalog_number = st.text_input(
             "Catalog Number",
             value=f"CAT-{datetime.now().strftime('%Y')}-001",
-            placeholder="e.g., CAT-2026-001"
+            placeholder="e.g., CAT-2026-001",
+            key="catalog_number_input"
         )
         
-        catalog_date = st.date_input("Catalog Date", value=datetime.now())
+        catalog_date = st.date_input("Catalog Date", value=datetime.now(), key="catalog_date_input")
         
         st.markdown("---")
-        st.markdown(f"**Selected Products:** {len(st.session_state.selected_products)}")
+        st.metric("Selected Products", len(selected_skus))
         
-        if st.session_state.selected_products:
-            st.markdown("**Products in catalog:**")
-            for sku in st.session_state.selected_products[:10]:
+        st.markdown("---")
+        
+        if len(selected_skus) > 0:
+            products = []
+            for sku in selected_skus:
                 product = dm.get_product_by_sku(sku)
                 if product:
-                    st.caption(f"• {product['name']}")
-            if len(st.session_state.selected_products) > 10:
-                st.caption(f"... and {len(st.session_state.selected_products) - 10} more")
-        
-        st.markdown("---")
-        
-        if st.button("📄 Generate Catalog PDF", use_container_width=True, type="primary"):
-            if not st.session_state.selected_products:
-                st.error("Please select at least one product")
-            else:
-                products = []
-                for sku in st.session_state.selected_products:
-                    product = dm.get_product_by_sku(sku)
-                    if product:
-                        products.append(product)
-                
-                with st.spinner("Generating PDF..."):
-                    pdf_buffer = pdfgen.generate_catalog_pdf(
-                        products=products,
-                        settings=settings,
-                        catalog_number=catalog_number,
-                        catalog_date=catalog_date.strftime("%B %d, %Y")
-                    )
-                
-                st.download_button(
-                    label="⬇️ Download Catalog PDF",
-                    data=pdf_buffer.getvalue(),
-                    file_name=f"catalog_{catalog_number}_{datetime.now().strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-                st.success("Catalog generated successfully!")
+                    products.append(product)
+            
+            pdf_buffer = pdfgen.generate_catalog_pdf(
+                products=products,
+                settings=settings,
+                catalog_number=catalog_number,
+                catalog_date=catalog_date.strftime("%B %d, %Y")
+            )
+            
+            st.download_button(
+                label="📄 Download Catalog PDF",
+                data=pdf_buffer.getvalue(),
+                file_name=f"catalog_{catalog_number}_{datetime.now().strftime('%Y%m%d')}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+        else:
+            st.info("Select products from the left panel to generate a catalog.")
 
 
 def show_quotation_builder():
