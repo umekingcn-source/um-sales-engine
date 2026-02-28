@@ -299,12 +299,12 @@ def show_product_form():
             
             existing_categories = dm.get_categories()
             all_categories = list(dict.fromkeys(preset_categories + existing_categories))
-            category_options = ["+ New Category"] + all_categories
+            category_options = all_categories + ["+ New Category"]
             
             if existing_product and existing_product["category"] in all_categories:
-                default_idx = all_categories.index(existing_product["category"]) + 1
+                default_idx = all_categories.index(existing_product["category"])
             else:
-                default_idx = 1 if all_categories else 0
+                default_idx = 0 if all_categories else 0
             
             category_select = st.selectbox(
                 "Category (select preset or choose '+ New Category' to type custom)",
