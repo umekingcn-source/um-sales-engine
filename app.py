@@ -277,37 +277,21 @@ def show_product_form():
             )
             
             categories = dm.get_categories()
+            category_options = categories + ["+ New Category"]
             
-            cat_col1, cat_col2 = st.columns([3, 1])
-            with cat_col1:
-                category_options = categories + ["── 自定义/新增类别 ──"]
-                
-                if existing_product and existing_product["category"] in categories:
-                    default_idx = categories.index(existing_product["category"])
-                else:
-                    default_idx = 0 if categories else 0
-                
-                category_select = st.selectbox(
-                    "Category",
-                    category_options if category_options else ["── 自定义/新增类别 ──"],
-                    index=default_idx if category_options and default_idx < len(category_options) else 0
-                )
+            if existing_product and existing_product["category"] in categories:
+                default_idx = categories.index(existing_product["category"])
+            else:
+                default_idx = 0 if categories else 0
             
-            with cat_col2:
-                st.write("")
-                use_custom_category = st.checkbox(
-                    "自定义类别", 
-                    value=(category_select == "── 自定义/新增类别 ──"),
-                    help="勾选后可输入任意类别名称"
-                )
+            category_select = st.selectbox(
+                "Category",
+                category_options if category_options else ["+ New Category"],
+                index=default_idx if category_options and default_idx < len(category_options) else 0
+            )
             
-            if use_custom_category or category_select == "── 自定义/新增类别 ──":
-                current_cat = existing_product["category"] if existing_product else ""
-                category = st.text_input(
-                    "输入类别名称", 
-                    value=current_cat,
-                    placeholder="例如: WRITING INSTRUMENTS"
-                )
+            if category_select == "+ New Category":
+                category = st.text_input("New Category Name", placeholder="e.g., WRITING INSTRUMENTS")
             else:
                 category = category_select
             
