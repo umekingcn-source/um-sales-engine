@@ -259,6 +259,64 @@ def show_product_form():
     else:
         st.subheader("Add New Product")
     
+    preset_categories = [
+        "New Employee Onboarding Pack",
+        "Coffee / Baking Shop Merch Kit",
+        "Corporate Promotional Package",
+        "Cosmetics Membership Package",
+        "Esports Gaming Exhibition Swag",
+        "Eco-friendly Activity Pack",
+        "Fishing Lure Equipment Set",
+        "Globally Theme Park Water World Resort",
+        "Gym Membership Package",
+        "NGO or Healthcare Charity",
+        "On-site Branding for Large Events",
+        "Outdoor Hiking Gear Set",
+        "Pet Love Package",
+        "Sports Brand Collection Swag",
+        "Souvenir Gift Items",
+        "The Sand-Free Beach Vacation Kit",
+        "Travel Agency VIP Kit",
+        "University Campus Spirit & Alumni Kit",
+    ]
+    
+    hidden_categories = dm.get_hidden_categories()
+    visible_preset = [c for c in preset_categories if c not in hidden_categories]
+    existing_categories = dm.get_categories()
+    all_categories = list(dict.fromkeys(visible_preset + existing_categories))
+    category_options = all_categories + ["+ New Category"]
+    
+    cat_col1, cat_col2 = st.columns([3, 1])
+    with cat_col1:
+        if existing_product and existing_product["category"] in all_categories:
+            default_idx = all_categories.index(existing_product["category"])
+        else:
+            default_idx = 0 if all_categories else 0
+        
+        selected_category = st.selectbox(
+            "Category",
+            category_options,
+            index=default_idx,
+            key="product_category_select"
+        )
+    
+    with cat_col2:
+        st.write("")
+        if selected_category and selected_category != "+ New Category":
+            if st.button("🗑️ Hide", key="hide_cat_btn", help="Hide this category from list"):
+                dm.hide_category(selected_category)
+                st.rerun()
+    
+    if selected_category == "+ New Category":
+        new_category_input = st.text_input(
+            "Enter new category name:",
+            placeholder="e.g., WRITING INSTRUMENTS",
+            key="new_category_input"
+        )
+        category = new_category_input.strip() if new_category_input else ""
+    else:
+        category = selected_category
+    
     with st.form("product_form"):
         col1, col2 = st.columns(2)
         
@@ -275,58 +333,6 @@ def show_product_form():
                 value=existing_product["name"] if existing_product else "",
                 placeholder="e.g., Signature Metal Ballpoint Pen"
             )
-            
-            preset_categories = [
-                "New Employee Onboarding Pack",
-                "Coffee / Baking Shop Merch Kit",
-                "Corporate Promotional Package",
-                "Cosmetics Membership Package",
-                "Esports Gaming Exhibition Swag",
-                "Eco-friendly Activity Pack",
-                "Fishing Lure Equipment Set",
-                "Globally Theme Park Water World Resort",
-                "Gym Membership Package",
-                "NGO or Healthcare Charity",
-                "On-site Branding for Large Events",
-                "Outdoor Hiking Gear Set",
-                "Pet Love Package",
-                "Sports Brand Collection Swag",
-                "Souvenir Gift Items",
-                "The Sand-Free Beach Vacation Kit",
-                "Travel Agency VIP Kit",
-                "University Campus Spirit & Alumni Kit",
-            ]
-            
-            hidden_categories = dm.get_hidden_categories()
-            visible_preset = [c for c in preset_categories if c not in hidden_categories]
-            existing_categories = dm.get_categories()
-            all_categories = list(dict.fromkeys(visible_preset + existing_categories))
-            category_options = all_categories + ["+ New Category"]
-            
-            if existing_product and existing_product["category"] in all_categories:
-                default_idx = all_categories.index(existing_product["category"])
-            else:
-                default_idx = 0 if all_categories else 0
-            
-            category_select = st.selectbox(
-                "Category (select preset or choose '+ New Category' to type custom)",
-                category_options,
-                index=default_idx,
-                key="product_category_select"
-            )
-            
-            new_category_input = st.text_input(
-                "Or enter new category name here:",
-                placeholder="Type new category name if '+ New Category' selected above",
-                key="new_category_input"
-            )
-            
-            if new_category_input.strip():
-                category = new_category_input.strip()
-            elif category_select != "+ New Category":
-                category = category_select
-            else:
-                category = ""
             
             unit_price = st.number_input(
                 "Unit Price (USD) *",
