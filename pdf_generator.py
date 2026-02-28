@@ -417,9 +417,10 @@ class QuotationPDFGenerator:
     
     def _draw_products_table(self, c, products, y_start, shipping_cost, shipping_terms):
         """Draw products table with detailed information."""
-        col_widths = [65, 55, 180, 30, 22, 55, 55, 25, 55]
+        col_widths = [48, 42, 130, 25, 20, 48, 45, 22]
+        extra_col_widths = [50, 38, 38]
         col_labels = ["Item No.", "Product Pic.", "Description", "QTY.", "Unit", 
-                      "EXW Unit Price(USD)", "Net Amount (USD)", "CTN QTY.", "Packaging Rate"]
+                      "EXW Unit Price(USD)", "Net Amount (USD)", "CTN QTY."]
         
         header_y = y_start
         header_height = 35
@@ -428,20 +429,21 @@ class QuotationPDFGenerator:
         c.rect(self.margin, header_y - header_height, self.content_width, header_height, fill=1, stroke=0)
         
         c.setFillColor(WHITE)
-        c.setFont("Helvetica-Bold", 6)
+        c.setFont("Helvetica-Bold", 5)
         
         x_pos = self.margin
         for i, label in enumerate(col_labels):
-            if i < 8:
-                cell_x = x_pos + col_widths[i] / 2
-                c.drawCentredString(cell_x, header_y - 20, label)
-                x_pos += col_widths[i]
+            cell_x = x_pos + col_widths[i] / 2
+            c.drawCentredString(cell_x, header_y - 20, label)
+            x_pos += col_widths[i]
         
-        extra_x = self.margin + sum(col_widths[:8])
-        c.drawCentredString(extra_x + 25, header_y - 12, "Carton Size/cm")
-        c.drawCentredString(extra_x + 25, header_y - 22, "L    W    D")
-        c.drawCentredString(extra_x + 60, header_y - 17, "G.W./CTN")
-        c.drawCentredString(extra_x + 95, header_y - 17, "Total G.W.")
+        extra_x = self.margin + sum(col_widths)
+        c.drawCentredString(extra_x + extra_col_widths[0]/2, header_y - 12, "Carton Size")
+        c.drawCentredString(extra_x + extra_col_widths[0]/2, header_y - 22, "L   W   D")
+        extra_x += extra_col_widths[0]
+        c.drawCentredString(extra_x + extra_col_widths[1]/2, header_y - 17, "G.W./CTN")
+        extra_x += extra_col_widths[1]
+        c.drawCentredString(extra_x + extra_col_widths[2]/2, header_y - 17, "Total G.W.")
         
         row_y = header_y - header_height
         subtotal = 0
@@ -470,13 +472,19 @@ class QuotationPDFGenerator:
                 c.setFillColor(self.brand_color)
                 c.rect(self.margin, row_y - header_height, self.content_width, header_height, fill=1, stroke=0)
                 c.setFillColor(WHITE)
-                c.setFont("Helvetica-Bold", 6)
+                c.setFont("Helvetica-Bold", 5)
                 x_pos = self.margin
                 for i, label in enumerate(col_labels):
-                    if i < 8:
-                        cell_x = x_pos + col_widths[i] / 2
-                        c.drawCentredString(cell_x, row_y - 20, label)
-                        x_pos += col_widths[i]
+                    cell_x = x_pos + col_widths[i] / 2
+                    c.drawCentredString(cell_x, row_y - 20, label)
+                    x_pos += col_widths[i]
+                extra_x = self.margin + sum(col_widths)
+                c.drawCentredString(extra_x + extra_col_widths[0]/2, row_y - 12, "Carton Size")
+                c.drawCentredString(extra_x + extra_col_widths[0]/2, row_y - 22, "L   W   D")
+                extra_x += extra_col_widths[0]
+                c.drawCentredString(extra_x + extra_col_widths[1]/2, row_y - 17, "G.W./CTN")
+                extra_x += extra_col_widths[1]
+                c.drawCentredString(extra_x + extra_col_widths[2]/2, row_y - 17, "Total G.W.")
                 row_y -= header_height
             
             c.setStrokeColor(colors.HexColor("#CCCCCC"))
@@ -484,8 +492,9 @@ class QuotationPDFGenerator:
             c.rect(self.margin, row_y - row_height, self.content_width, row_height, stroke=1, fill=0)
             
             x_pos = self.margin
-            for i in range(len(col_widths) - 1):
-                x_pos += col_widths[i]
+            all_widths = col_widths + extra_col_widths
+            for i in range(len(all_widths) - 1):
+                x_pos += all_widths[i]
                 c.line(x_pos, row_y, x_pos, row_y - row_height)
             
             x_offset = self.margin
@@ -496,7 +505,7 @@ class QuotationPDFGenerator:
             x_offset += col_widths[0]
             
             image_path = get_absolute_path(product.get("image_path", ""))
-            img_size = 45
+            img_size = 38
             img_x = x_offset + (col_widths[1] - img_size) / 2
             img_y = row_y - row_height + (row_height - img_size) / 2
             
@@ -543,11 +552,12 @@ class QuotationPDFGenerator:
             carton_w = product.get("carton_w", 0) or 0
             carton_h = product.get("carton_h", 0) or 0
             
-            remaining_width = self.content_width - sum(col_widths[:8])
-            carton_text = f"{int(carton_l)}  {int(carton_w)}  {int(carton_h)}"
-            c.drawCentredString(x_offset + 25, row_y - 45, carton_text)
-            c.drawCentredString(x_offset + 60, row_y - 45, f"{gw_per_ctn:.2f}")
-            c.drawCentredString(x_offset + 95, row_y - 45, f"{product_gw:.2f}")
+            carton_text = f"{int(carton_l)} {int(carton_w)} {int(carton_h)}"
+            c.drawCentredString(x_offset + extra_col_widths[0]/2, row_y - 45, carton_text)
+            x_offset += extra_col_widths[0]
+            c.drawCentredString(x_offset + extra_col_widths[1]/2, row_y - 45, f"{gw_per_ctn:.2f}")
+            x_offset += extra_col_widths[1]
+            c.drawCentredString(x_offset + extra_col_widths[2]/2, row_y - 45, f"{product_gw:.2f}")
             
             row_y -= row_height
         
@@ -558,7 +568,7 @@ class QuotationPDFGenerator:
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
         c.setFillColor(BLACK)
         c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(self.margin + 200, row_y - 16, "SUB TOTAL")
+        c.drawCentredString(self.margin + 150, row_y - 16, "SUB TOTAL")
         
         x_net = self.margin + sum(col_widths[:6]) + col_widths[6]/2
         c.drawCentredString(x_net, row_y - 16, f"${subtotal:.2f}")
@@ -566,7 +576,7 @@ class QuotationPDFGenerator:
         x_ctn = self.margin + sum(col_widths[:7]) + col_widths[7]/2
         c.drawCentredString(x_ctn, row_y - 16, f"{int(total_ctn)}")
         
-        x_gw = self.margin + sum(col_widths[:8]) + 95
+        x_gw = self.margin + sum(col_widths) + extra_col_widths[0] + extra_col_widths[1] + extra_col_widths[2]/2
         c.drawCentredString(x_gw, row_y - 16, f"{total_gw:.2f}")
         
         row_y -= summary_height

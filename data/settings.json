@@ -9,5 +9,8 @@
   "default_terms": "1. Prices are quoted in USD, EXW Foshan, China.\n2. Payment Terms: 30% deposit, 70% before shipment.\n3. Lead Time: 25-30 working days after order confirmation.\n4. Quotation valid for 7 days from date of issue.\n5. All products are subject to final confirmation.",
   "quote_validity_days": 7,
   "catalog_title": "PRODUCT CATALOG",
-  "brand_color": "#003366"
+  "brand_color": "#003366",
+  "hidden_categories": [
+    "555"
+  ]
 }
