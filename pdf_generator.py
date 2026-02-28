@@ -439,7 +439,7 @@ class QuotationPDFGenerator:
         
         extra_x = self.margin + sum(col_widths)
         c.drawCentredString(extra_x + extra_col_widths[0]/2, header_y - 12, "Carton Size")
-        c.drawCentredString(extra_x + extra_col_widths[0]/2, header_y - 22, "L   W   D")
+        c.drawCentredString(extra_x + extra_col_widths[0]/2, header_y - 22, "L*W*D")
         extra_x += extra_col_widths[0]
         c.drawCentredString(extra_x + extra_col_widths[1]/2, header_y - 17, "G.W./CTN")
         extra_x += extra_col_widths[1]
@@ -480,7 +480,7 @@ class QuotationPDFGenerator:
                     x_pos += col_widths[i]
                 extra_x = self.margin + sum(col_widths)
                 c.drawCentredString(extra_x + extra_col_widths[0]/2, row_y - 12, "Carton Size")
-                c.drawCentredString(extra_x + extra_col_widths[0]/2, row_y - 22, "L   W   D")
+                c.drawCentredString(extra_x + extra_col_widths[0]/2, row_y - 22, "L*W*D")
                 extra_x += extra_col_widths[0]
                 c.drawCentredString(extra_x + extra_col_widths[1]/2, row_y - 17, "G.W./CTN")
                 extra_x += extra_col_widths[1]
@@ -500,8 +500,14 @@ class QuotationPDFGenerator:
             x_offset = self.margin
             
             c.setFillColor(BLACK)
-            c.setFont("Helvetica", 7)
-            c.drawCentredString(x_offset + col_widths[0]/2, row_y - 45, product.get("sku", ""))
+            c.setFont("Helvetica", 5)
+            sku = product.get("sku", "")
+            sku_max_width = col_widths[0] - 4
+            sku_width = c.stringWidth(sku, "Helvetica", 5)
+            if sku_width > sku_max_width:
+                ratio = sku_max_width / sku_width
+                sku = sku[:int(len(sku) * ratio) - 1] + ".."
+            c.drawCentredString(x_offset + col_widths[0]/2, row_y - 45, sku)
             x_offset += col_widths[0]
             
             image_path = get_absolute_path(product.get("image_path", ""))
@@ -566,7 +572,7 @@ class QuotationPDFGenerator:
             carton_w = product.get("carton_w", 0) or 0
             carton_h = product.get("carton_h", 0) or 0
             
-            carton_text = f"{int(carton_l)} {int(carton_w)} {int(carton_h)}"
+            carton_text = f"{int(carton_l)}*{int(carton_w)}*{int(carton_h)}"
             c.drawCentredString(x_offset + extra_col_widths[0]/2, row_y - 45, carton_text)
             x_offset += extra_col_widths[0]
             c.drawCentredString(x_offset + extra_col_widths[1]/2, row_y - 45, f"{gw_per_ctn:.2f}")
