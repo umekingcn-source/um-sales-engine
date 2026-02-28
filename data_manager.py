@@ -320,3 +320,29 @@ def get_products_by_category(category: str) -> pd.DataFrame:
     if category and category != "All":
         return df[df["category"] == category]
     return df
+
+
+def get_hidden_categories() -> list:
+    """Get list of hidden/deleted categories."""
+    settings = get_settings()
+    return settings.get("hidden_categories", [])
+
+
+def hide_category(category: str):
+    """Hide a category from the preset list."""
+    settings = get_settings()
+    hidden = settings.get("hidden_categories", [])
+    if category not in hidden:
+        hidden.append(category)
+        settings["hidden_categories"] = hidden
+        save_settings(settings)
+
+
+def unhide_category(category: str):
+    """Restore a hidden category."""
+    settings = get_settings()
+    hidden = settings.get("hidden_categories", [])
+    if category in hidden:
+        hidden.remove(category)
+        settings["hidden_categories"] = hidden
+        save_settings(settings)

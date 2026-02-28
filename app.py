@@ -297,8 +297,10 @@ def show_product_form():
                 "University Campus Spirit & Alumni Kit",
             ]
             
+            hidden_categories = dm.get_hidden_categories()
+            visible_preset = [c for c in preset_categories if c not in hidden_categories]
             existing_categories = dm.get_categories()
-            all_categories = list(dict.fromkeys(preset_categories + existing_categories))
+            all_categories = list(dict.fromkeys(visible_preset + existing_categories))
             category_options = all_categories + ["+ New Category"]
             
             if existing_product and existing_product["category"] in all_categories:
@@ -811,7 +813,7 @@ def show_settings():
     
     settings = dm.get_settings()
     
-    tab1, tab2, tab3 = st.tabs(["🏢 Company Info", "📄 Document Settings", "🎨 Branding"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🏢 Company Info", "📄 Document Settings", "🎨 Branding", "📁 Category Management"])
     
     with tab1:
         st.subheader("Company Information")
@@ -938,6 +940,63 @@ def show_settings():
                 settings["brand_color"] = brand_color
                 dm.save_settings(settings)
                 st.success("Brand color saved!")
+    
+    with tab4:
+        st.subheader("Category Management")
+        st.caption("Manage preset categories for product classification")
+        
+        preset_categories = [
+            "New Employee Onboarding Pack",
+            "Coffee / Baking Shop Merch Kit",
+            "Corporate Promotional Package",
+            "Cosmetics Membership Package",
+            "Esports Gaming Exhibition Swag",
+            "Eco-friendly Activity Pack",
+            "Fishing Lure Equipment Set",
+            "Globally Theme Park Water World Resort",
+            "Gym Membership Package",
+            "NGO or Healthcare Charity",
+            "On-site Branding for Large Events",
+            "Outdoor Hiking Gear Set",
+            "Pet Love Package",
+            "Sports Brand Collection Swag",
+            "Souvenir Gift Items",
+            "The Sand-Free Beach Vacation Kit",
+            "Travel Agency VIP Kit",
+            "University Campus Spirit & Alumni Kit",
+        ]
+        
+        hidden_categories = dm.get_hidden_categories()
+        
+        st.markdown("**Active Categories**")
+        active_cats = [c for c in preset_categories if c not in hidden_categories]
+        
+        if active_cats:
+            for cat in active_cats:
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.write(f"• {cat}")
+                with col2:
+                    if st.button("🗑️", key=f"hide_{cat}", help=f"Hide {cat}"):
+                        dm.hide_category(cat)
+                        st.rerun()
+        else:
+            st.info("No active preset categories")
+        
+        st.divider()
+        
+        st.markdown("**Hidden Categories**")
+        if hidden_categories:
+            for cat in hidden_categories:
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.write(f"• {cat}")
+                with col2:
+                    if st.button("♻️", key=f"unhide_{cat}", help=f"Restore {cat}"):
+                        dm.unhide_category(cat)
+                        st.rerun()
+        else:
+            st.info("No hidden categories")
 
 
 if __name__ == "__main__":
