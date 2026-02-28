@@ -517,18 +517,32 @@ class QuotationPDFGenerator:
                     pass
             x_offset += col_widths[1]
             
-            desc_x = x_offset + 5
-            desc_y = row_y - 12
-            c.setFont("Helvetica-Bold", 7)
-            c.drawString(desc_x, desc_y, product.get("name", ""))
+            desc_x = x_offset + 3
+            desc_y = row_y - 11
+            desc_max_width = col_widths[2] - 6
             
-            c.setFont("Helvetica", 6)
+            c.setFont("Helvetica-Bold", 6)
+            name = product.get("name", "")
+            name_width = c.stringWidth(name, "Helvetica-Bold", 6)
+            if name_width > desc_max_width:
+                ratio = desc_max_width / name_width
+                name = name[:int(len(name) * ratio) - 2] + "..."
+            c.drawString(desc_x, desc_y, name)
+            
+            c.setFont("Helvetica", 5)
             desc_lines = product.get("description", "").split("\n")
-            desc_y -= 10
-            for line in desc_lines[:7]:
-                if line.strip():
-                    c.drawString(desc_x, desc_y, f"- {line.strip()}")
-                    desc_y -= 8
+            desc_y -= 9
+            line_count = 0
+            for line in desc_lines:
+                if line.strip() and line_count < 8:
+                    text = f"- {line.strip()}"
+                    text_width = c.stringWidth(text, "Helvetica", 5)
+                    if text_width > desc_max_width:
+                        ratio = desc_max_width / text_width
+                        text = text[:int(len(text) * ratio) - 2] + "..."
+                    c.drawString(desc_x, desc_y, text)
+                    desc_y -= 7
+                    line_count += 1
             x_offset += col_widths[2]
             
             c.setFont("Helvetica", 8)
