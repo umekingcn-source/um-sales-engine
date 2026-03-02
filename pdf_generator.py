@@ -961,40 +961,40 @@ class QuotationPDFGenerator:
         c.setStrokeColor(colors.HexColor("#CCCCCC"))
         c.setLineWidth(0.5)
         
-        c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
-        c.setFillColor(BLACK)
         lang = getattr(self, 'language', 'English')
         font_name = get_font_for_language(lang, bold=True)
+        
+        label_x = self.margin + 10
+        amount_x = self.margin + sum(col_widths[:5]) + col_widths[5]/2
+        ctn_x = self.margin + sum(col_widths[:7]) + col_widths[7]/2
+        gw_x = self.margin + sum(col_widths) + extra_col_widths[0] + extra_col_widths[1] + extra_col_widths[2]/2
+        
+        c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
+        c.setFillColor(BLACK)
         c.setFont(font_name, 9)
-        c.drawCentredString(self.margin + 150, row_y - 16, get_translation(lang, "sub_total"))
-        
-        x_net = self.margin + sum(col_widths[:6]) + col_widths[6]/2
-        c.drawCentredString(x_net, row_y - 16, f"${subtotal:.2f}")
-        
-        x_ctn = self.margin + sum(col_widths[:7]) + col_widths[7]/2
-        c.drawCentredString(x_ctn, row_y - 16, f"{int(total_ctn)}")
-        
-        x_gw = self.margin + sum(col_widths) + extra_col_widths[0] + extra_col_widths[1] + extra_col_widths[2]/2
-        c.drawCentredString(x_gw, row_y - 16, f"{total_gw:.2f}")
+        c.drawString(label_x, row_y - 16, get_translation(lang, "sub_total"))
+        c.drawRightString(amount_x + 40, row_y - 16, f"${subtotal:.2f}")
+        c.drawCentredString(ctn_x, row_y - 16, f"{int(total_ctn)}")
+        c.drawCentredString(gw_x, row_y - 16, f"{total_gw:.2f}")
         
         row_y -= summary_height
         
         if shipping_cost > 0:
             c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
-            c.setFont("Helvetica-Bold", 8)
-            shipping_label = f"DDP SEA SHIPPING COST ({shipping_terms})" if shipping_terms else "SHIPPING COST"
-            c.drawCentredString(self.margin + 200, row_y - 16, shipping_label)
-            c.drawCentredString(x_net, row_y - 16, f"${shipping_cost:.2f}")
+            c.setFont(font_name, 7)
+            shipping_label = f"DDP SEA SHIPPING COST ({shipping_terms})" if shipping_terms else get_translation(lang, "shipping_cost")
+            c.drawString(label_x, row_y - 16, shipping_label)
+            c.drawRightString(amount_x + 40, row_y - 16, f"${shipping_cost:.2f}")
             row_y -= summary_height
         
         c.setFillColor(self.brand_color)
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, fill=1, stroke=0)
         c.setFillColor(WHITE)
         c.setFont(font_name, 10)
-        c.drawCentredString(self.margin + 200, row_y - 17, get_translation(lang, "total_order_amount"))
+        c.drawString(label_x, row_y - 17, get_translation(lang, "total_order_amount"))
         
         total_amount = subtotal + shipping_cost
-        c.drawCentredString(x_net, row_y - 17, f"${total_amount:.2f}")
+        c.drawRightString(amount_x + 40, row_y - 17, f"${total_amount:.2f}")
         
         return row_y - summary_height - 20
     
