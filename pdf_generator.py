@@ -28,6 +28,256 @@ GRAY = colors.HexColor("#666666")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+TRANSLATIONS = {
+    "English": {
+        "product_catalog": "PRODUCT CATALOG",
+        "catalog_number": "CATALOG NUMBER",
+        "date": "DATE",
+        "quote": "QUOTE",
+        "quote_number": "QUOTE#",
+        "customer_id": "CUSTOMER ID",
+        "valid_until": "VALID UNTIL",
+        "customer": "CUSTOMER",
+        "item_no": "Item No.",
+        "product_pic": "Product Pic.",
+        "description": "Description",
+        "qty": "QTY.",
+        "unit": "Unit",
+        "unit_price": "EXW Unit Price(USD)",
+        "net_amount": "Net Amount (USD)",
+        "ctn_qty": "CTN QTY.",
+        "carton_size": "Carton Size",
+        "gw_ctn": "G.W./CTN",
+        "total_gw": "Total G.W.",
+        "sub_total": "SUB TOTAL",
+        "total_order_amount": "TOTAL ORDER AMOUNT",
+        "shipping_cost": "SHIPPING COST",
+        "terms_conditions": "TERMS & CONDITIONS",
+        "pcs": "PCS",
+        "inquiry": "INQUIRY",
+    },
+    "Arabic": {
+        "product_catalog": "كتالوج المنتجات",
+        "catalog_number": "رقم الكتالوج",
+        "date": "التاريخ",
+        "quote": "عرض سعر",
+        "quote_number": "رقم العرض",
+        "customer_id": "رقم العميل",
+        "valid_until": "صالح حتى",
+        "customer": "العميل",
+        "item_no": "رقم الصنف",
+        "product_pic": "صورة المنتج",
+        "description": "الوصف",
+        "qty": "الكمية",
+        "unit": "الوحدة",
+        "unit_price": "سعر الوحدة",
+        "net_amount": "المبلغ الصافي",
+        "ctn_qty": "عدد الكراتين",
+        "carton_size": "حجم الكرتون",
+        "gw_ctn": "الوزن/كرتون",
+        "total_gw": "الوزن الإجمالي",
+        "sub_total": "المجموع الفرعي",
+        "total_order_amount": "إجمالي الطلب",
+        "shipping_cost": "تكلفة الشحن",
+        "terms_conditions": "الشروط والأحكام",
+        "pcs": "قطعة",
+        "inquiry": "استفسار",
+    },
+    "Spanish": {
+        "product_catalog": "CATÁLOGO DE PRODUCTOS",
+        "catalog_number": "NÚMERO DE CATÁLOGO",
+        "date": "FECHA",
+        "quote": "COTIZACIÓN",
+        "quote_number": "N° COTIZACIÓN",
+        "customer_id": "ID CLIENTE",
+        "valid_until": "VÁLIDO HASTA",
+        "customer": "CLIENTE",
+        "item_no": "N° Artículo",
+        "product_pic": "Imagen",
+        "description": "Descripción",
+        "qty": "CANT.",
+        "unit": "Unidad",
+        "unit_price": "Precio Unitario",
+        "net_amount": "Importe Neto",
+        "ctn_qty": "CTN QTY.",
+        "carton_size": "Tamaño Caja",
+        "gw_ctn": "Peso/Caja",
+        "total_gw": "Peso Total",
+        "sub_total": "SUBTOTAL",
+        "total_order_amount": "TOTAL DEL PEDIDO",
+        "shipping_cost": "COSTO DE ENVÍO",
+        "terms_conditions": "TÉRMINOS Y CONDICIONES",
+        "pcs": "PZA",
+        "inquiry": "CONSULTA",
+    },
+    "French": {
+        "product_catalog": "CATALOGUE DE PRODUITS",
+        "catalog_number": "N° DE CATALOGUE",
+        "date": "DATE",
+        "quote": "DEVIS",
+        "quote_number": "N° DEVIS",
+        "customer_id": "ID CLIENT",
+        "valid_until": "VALIDE JUSQU'AU",
+        "customer": "CLIENT",
+        "item_no": "N° Article",
+        "product_pic": "Photo",
+        "description": "Description",
+        "qty": "QTÉ",
+        "unit": "Unité",
+        "unit_price": "Prix Unitaire",
+        "net_amount": "Montant Net",
+        "ctn_qty": "QTÉ CTN",
+        "carton_size": "Taille Carton",
+        "gw_ctn": "Poids/Ctn",
+        "total_gw": "Poids Total",
+        "sub_total": "SOUS-TOTAL",
+        "total_order_amount": "MONTANT TOTAL",
+        "shipping_cost": "FRAIS DE LIVRAISON",
+        "terms_conditions": "CONDITIONS GÉNÉRALES",
+        "pcs": "PCS",
+        "inquiry": "DEMANDE",
+    },
+    "German": {
+        "product_catalog": "PRODUKTKATALOG",
+        "catalog_number": "KATALOGNUMMER",
+        "date": "DATUM",
+        "quote": "ANGEBOT",
+        "quote_number": "ANGEBOTSNR.",
+        "customer_id": "KUNDENNR.",
+        "valid_until": "GÜLTIG BIS",
+        "customer": "KUNDE",
+        "item_no": "Artikel-Nr.",
+        "product_pic": "Produktbild",
+        "description": "Beschreibung",
+        "qty": "MENGE",
+        "unit": "Einheit",
+        "unit_price": "Stückpreis",
+        "net_amount": "Nettobetrag",
+        "ctn_qty": "KTN MENGE",
+        "carton_size": "Kartongröße",
+        "gw_ctn": "Gewicht/Ktn",
+        "total_gw": "Gesamtgewicht",
+        "sub_total": "ZWISCHENSUMME",
+        "total_order_amount": "GESAMTBETRAG",
+        "shipping_cost": "VERSANDKOSTEN",
+        "terms_conditions": "GESCHÄFTSBEDINGUNGEN",
+        "pcs": "STK",
+        "inquiry": "ANFRAGE",
+    },
+    "Korean": {
+        "product_catalog": "제품 카탈로그",
+        "catalog_number": "카탈로그 번호",
+        "date": "날짜",
+        "quote": "견적서",
+        "quote_number": "견적 번호",
+        "customer_id": "고객 ID",
+        "valid_until": "유효 기간",
+        "customer": "고객",
+        "item_no": "품목 번호",
+        "product_pic": "제품 사진",
+        "description": "설명",
+        "qty": "수량",
+        "unit": "단위",
+        "unit_price": "단가",
+        "net_amount": "금액",
+        "ctn_qty": "박스 수량",
+        "carton_size": "박스 크기",
+        "gw_ctn": "박스당 중량",
+        "total_gw": "총 중량",
+        "sub_total": "소계",
+        "total_order_amount": "총 주문 금액",
+        "shipping_cost": "배송비",
+        "terms_conditions": "이용약관",
+        "pcs": "개",
+        "inquiry": "문의",
+    },
+    "Japanese": {
+        "product_catalog": "製品カタログ",
+        "catalog_number": "カタログ番号",
+        "date": "日付",
+        "quote": "見積書",
+        "quote_number": "見積番号",
+        "customer_id": "顧客ID",
+        "valid_until": "有効期限",
+        "customer": "お客様",
+        "item_no": "品番",
+        "product_pic": "製品写真",
+        "description": "説明",
+        "qty": "数量",
+        "unit": "単位",
+        "unit_price": "単価",
+        "net_amount": "金額",
+        "ctn_qty": "箱数",
+        "carton_size": "箱サイズ",
+        "gw_ctn": "箱重量",
+        "total_gw": "総重量",
+        "sub_total": "小計",
+        "total_order_amount": "合計金額",
+        "shipping_cost": "送料",
+        "terms_conditions": "利用規約",
+        "pcs": "個",
+        "inquiry": "お問い合わせ",
+    },
+    "Russian": {
+        "product_catalog": "КАТАЛОГ ПРОДУКЦИИ",
+        "catalog_number": "НОМЕР КАТАЛОГА",
+        "date": "ДАТА",
+        "quote": "КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ",
+        "quote_number": "НОМЕР КП",
+        "customer_id": "ID КЛИЕНТА",
+        "valid_until": "ДЕЙСТВУЕТ ДО",
+        "customer": "КЛИЕНТ",
+        "item_no": "Артикул",
+        "product_pic": "Фото",
+        "description": "Описание",
+        "qty": "КОЛ-ВО",
+        "unit": "Ед.",
+        "unit_price": "Цена за ед.",
+        "net_amount": "Сумма",
+        "ctn_qty": "Кол-во кор.",
+        "carton_size": "Размер кор.",
+        "gw_ctn": "Вес/кор.",
+        "total_gw": "Общий вес",
+        "sub_total": "ПОДЫТОГ",
+        "total_order_amount": "ИТОГО",
+        "shipping_cost": "СТОИМОСТЬ ДОСТАВКИ",
+        "terms_conditions": "УСЛОВИЯ",
+        "pcs": "ШТ",
+        "inquiry": "ЗАПРОС",
+    },
+    "Hebrew": {
+        "product_catalog": "קטלוג מוצרים",
+        "catalog_number": "מספר קטלוג",
+        "date": "תאריך",
+        "quote": "הצעת מחיר",
+        "quote_number": "מספר הצעה",
+        "customer_id": "מספר לקוח",
+        "valid_until": "בתוקף עד",
+        "customer": "לקוח",
+        "item_no": "מק״ט",
+        "product_pic": "תמונה",
+        "description": "תיאור",
+        "qty": "כמות",
+        "unit": "יחידה",
+        "unit_price": "מחיר ליחידה",
+        "net_amount": "סכום",
+        "ctn_qty": "כמות קרטונים",
+        "carton_size": "גודל קרטון",
+        "gw_ctn": "משקל/קרטון",
+        "total_gw": "משקל כולל",
+        "sub_total": "סיכום ביניים",
+        "total_order_amount": "סכום כולל",
+        "shipping_cost": "עלות משלוח",
+        "terms_conditions": "תנאים והגבלות",
+        "pcs": "יח׳",
+        "inquiry": "בירור",
+    },
+}
+
+def get_translation(lang: str, key: str) -> str:
+    """Get translated text for a given language and key."""
+    return TRANSLATIONS.get(lang, TRANSLATIONS["English"]).get(key, TRANSLATIONS["English"].get(key, key))
+
 
 def get_absolute_path(relative_path):
     """Convert relative path to absolute path for file access."""
@@ -58,9 +308,10 @@ class CatalogPDFGenerator:
         self.margin = 0.5 * inch
         self.content_width = self.page_width - 2 * self.margin
         
-    def generate(self, products: list, catalog_number: str = None, catalog_date: str = None) -> BytesIO:
+    def generate(self, products: list, catalog_number: str = None, catalog_date: str = None, language: str = "English") -> BytesIO:
         """Generate catalog PDF and return as BytesIO buffer."""
         buffer = BytesIO()
+        self.language = language
         
         c = canvas.Canvas(buffer, pagesize=A4)
         
@@ -175,14 +426,15 @@ class CatalogPDFGenerator:
         
         c.setFont("Helvetica-Bold", 20)
         c.setFillColor(self.brand_color)
-        title = self.settings.get("catalog_title", "PRODUCT CATALOG")
+        lang = getattr(self, 'language', 'English')
+        title = get_translation(lang, "product_catalog")
         title_width = c.stringWidth(title, "Helvetica-Bold", 20)
         c.drawString(right_x - title_width, y_top - 18, title)
         
         c.setFont("Helvetica-Bold", 8)
         c.setFillColor(BLACK)
-        c.drawRightString(right_x, y_top - 52, f"CATALOG NUMBER: {catalog_number}")
-        c.drawRightString(right_x, y_top - 64, f"DATE: {catalog_date}")
+        c.drawRightString(right_x, y_top - 52, f"{get_translation(lang, 'catalog_number')}: {catalog_number}")
+        c.drawRightString(right_x, y_top - 64, f"{get_translation(lang, 'date')}: {catalog_date}")
         
         c.setStrokeColor(self.brand_color)
         c.setLineWidth(2)
@@ -316,10 +568,12 @@ class QuotationPDFGenerator:
         valid_until: str,
         shipping_cost: float = 0,
         shipping_terms: str = "",
-        terms: str = ""
+        terms: str = "",
+        language: str = "English"
     ) -> BytesIO:
         """Generate quotation PDF and return as BytesIO buffer."""
         buffer = BytesIO()
+        self.language = language
         c = canvas.Canvas(buffer, pagesize=A4)
         
         current_page = 1
@@ -367,7 +621,8 @@ class QuotationPDFGenerator:
         
         c.setFillColor(self.brand_color)
         c.setFont("Helvetica-Bold", 32)
-        c.drawRightString(self.page_width - self.margin, y_top - 20, "QUOTE")
+        lang = getattr(self, 'language', 'English')
+        c.drawRightString(self.page_width - self.margin, y_top - 20, get_translation(lang, "quote"))
         
         right_x = self.page_width - self.margin
         info_x = right_x - 100
@@ -376,19 +631,19 @@ class QuotationPDFGenerator:
         c.setFillColor(BLACK)
         y_quote_info = y_top - 45
         
-        c.drawRightString(info_x, y_quote_info, "DATE:")
+        c.drawRightString(info_x, y_quote_info, f"{get_translation(lang, 'date')}:")
         c.drawRightString(right_x, y_quote_info, quote_date)
         
         y_quote_info -= 12
-        c.drawRightString(info_x, y_quote_info, "QUOTE#:")
+        c.drawRightString(info_x, y_quote_info, f"{get_translation(lang, 'quote_number')}:")
         c.drawRightString(right_x, y_quote_info, quote_number)
         
         y_quote_info -= 12
-        c.drawRightString(info_x, y_quote_info, "CUSTOMER ID:")
+        c.drawRightString(info_x, y_quote_info, f"{get_translation(lang, 'customer_id')}:")
         c.drawRightString(right_x, y_quote_info, customer_info.get("customer_id", ""))
         
         y_quote_info -= 12
-        c.drawRightString(info_x, y_quote_info, "VALID UNTIL:")
+        c.drawRightString(info_x, y_quote_info, f"{get_translation(lang, 'valid_until')}:")
         c.drawRightString(right_x, y_quote_info, valid_until)
         
         customer_y = y_top - 100
@@ -396,7 +651,7 @@ class QuotationPDFGenerator:
         c.rect(self.margin, customer_y - 20, self.content_width, 20, fill=1, stroke=0)
         c.setFillColor(WHITE)
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(self.margin + 10, customer_y - 14, "CUSTOMER")
+        c.drawString(self.margin + 10, customer_y - 14, get_translation(lang, "customer"))
         
         customer_y -= 35
         c.setFillColor(BLACK)
@@ -588,7 +843,8 @@ class QuotationPDFGenerator:
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
         c.setFillColor(BLACK)
         c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(self.margin + 150, row_y - 16, "SUB TOTAL")
+        lang = getattr(self, 'language', 'English')
+        c.drawCentredString(self.margin + 150, row_y - 16, get_translation(lang, "sub_total"))
         
         x_net = self.margin + sum(col_widths[:6]) + col_widths[6]/2
         c.drawCentredString(x_net, row_y - 16, f"${subtotal:.2f}")
@@ -613,7 +869,7 @@ class QuotationPDFGenerator:
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, fill=1, stroke=0)
         c.setFillColor(WHITE)
         c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(self.margin + 200, row_y - 17, "TOTAL ORDER AMOUNT")
+        c.drawCentredString(self.margin + 200, row_y - 17, get_translation(lang, "total_order_amount"))
         
         total_amount = subtotal + shipping_cost
         c.drawCentredString(x_net, row_y - 17, f"${total_amount:.2f}")
@@ -634,10 +890,10 @@ class QuotationPDFGenerator:
                            f"Page {page_num} | {self.settings.get('company_name', '')} | {self.settings.get('company_website', '')}")
 
 
-def generate_catalog_pdf(products: list, settings: dict, catalog_number: str = None, catalog_date: str = None) -> BytesIO:
+def generate_catalog_pdf(products: list, settings: dict, catalog_number: str = None, catalog_date: str = None, language: str = "English") -> BytesIO:
     """Convenience function to generate catalog PDF."""
     generator = CatalogPDFGenerator(settings)
-    return generator.generate(products, catalog_number, catalog_date)
+    return generator.generate(products, catalog_number, catalog_date, language)
 
 
 def generate_quotation_pdf(
@@ -649,11 +905,12 @@ def generate_quotation_pdf(
     valid_until: str,
     shipping_cost: float = 0,
     shipping_terms: str = "",
-    terms: str = ""
+    terms: str = "",
+    language: str = "English"
 ) -> BytesIO:
     """Convenience function to generate quotation PDF."""
     generator = QuotationPDFGenerator(settings)
     return generator.generate(
         products, customer_info, quote_number, quote_date, 
-        valid_until, shipping_cost, shipping_terms, terms
+        valid_until, shipping_cost, shipping_terms, terms, language
     )

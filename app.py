@@ -578,6 +578,9 @@ def show_catalog_creator():
         
         catalog_date = st.date_input("Catalog Date", value=datetime.now(), key="catalog_date_input")
         
+        language_options = ["English", "Arabic", "Spanish", "French", "German", "Korean", "Japanese", "Russian", "Hebrew"]
+        catalog_language = st.selectbox("Output Language", language_options, key="catalog_language")
+        
         st.markdown("---")
         st.metric("Selected Products", len(selected_skus))
         
@@ -594,7 +597,8 @@ def show_catalog_creator():
                 products=products,
                 settings=settings,
                 catalog_number=catalog_number,
-                catalog_date=catalog_date.strftime("%B %d, %Y")
+                catalog_date=catalog_date.strftime("%B %d, %Y"),
+                language=catalog_language
             )
             
             st.download_button(
@@ -759,6 +763,10 @@ def show_quotation_builder():
         )
         
         st.markdown("---")
+        language_options = ["English", "Arabic", "Spanish", "French", "German", "Korean", "Japanese", "Russian", "Hebrew"]
+        quote_language = st.selectbox("Output Language", language_options, key="quote_language")
+        
+        st.markdown("---")
         st.subheader("Summary")
         
         subtotal = sum(item["unit_price"] * item["quantity"] for item in st.session_state.quote_items)
@@ -799,7 +807,8 @@ def show_quotation_builder():
                         valid_until=valid_until.strftime("%d/%m/%Y"),
                         shipping_cost=shipping_cost,
                         shipping_terms=shipping_terms,
-                        terms=settings.get("default_terms", "")
+                        terms=settings.get("default_terms", ""),
+                        language=quote_language
                     )
                 
                 st.download_button(
