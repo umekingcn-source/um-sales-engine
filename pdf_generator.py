@@ -82,6 +82,45 @@ def get_font_for_language(lang: str, bold: bool = False) -> str:
         return CJK_FONTS[lang]
     return "Helvetica-Bold" if bold else "Helvetica"
 
+
+def wrap_text(text: str, max_width: float, font_name: str, font_size: float, canvas_obj) -> list:
+    """Wrap text to fit within max_width, returning list of lines."""
+    if not text:
+        return []
+    
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+    
+    for word in words:
+        test_line = f"{current_line} {word}".strip() if current_line else word
+        test_width = canvas_obj.stringWidth(test_line, font_name, font_size)
+        
+        if test_width <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line)
+            if canvas_obj.stringWidth(word, font_name, font_size) > max_width:
+                while word:
+                    for i in range(len(word), 0, -1):
+                        part = word[:i]
+                        if canvas_obj.stringWidth(part, font_name, font_size) <= max_width:
+                            lines.append(part)
+                            word = word[i:]
+                            break
+                    else:
+                        lines.append(word[0])
+                        word = word[1:]
+                current_line = ""
+            else:
+                current_line = word
+    
+    if current_line:
+        lines.append(current_line)
+    
+    return lines
+
 BRAND_COLOR = colors.HexColor("#003366")
 LIGHT_BLUE = colors.HexColor("#E8F0F8")
 WHITE = colors.white
@@ -855,7 +894,7 @@ class QuotationPDFGenerator:
             x_offset += col_widths[1]
             
             desc_x = x_offset + 3
-            desc_y = row_y - 11
+            desc_y = row_y - 10
             desc_max_width = col_widths[2] - 6
             
             lang = getattr(self, 'language', 'English')
@@ -865,28 +904,27 @@ class QuotationPDFGenerator:
             c.setFont(font_name, 6)
             name = product.get("name", "")
             name = translate_text(name, lang)
-            name_width = c.stringWidth(name, font_name, 6)
-            if name_width > desc_max_width:
-                ratio = desc_max_width / name_width
-                name = name[:int(len(name) * ratio) - 2] + "..."
-            c.drawString(desc_x, desc_y, name)
+            name_lines = wrap_text(name, desc_max_width, font_name, 6, c)
+            for i, name_line in enumerate(name_lines[:2]):
+                c.drawString(desc_x, desc_y, name_line)
+                desc_y -= 8
             
             c.setFont(font_name_regular, 5)
             description = product.get("description", "")
             description = translate_text(description, lang)
-            desc_lines = description.split("\n")
-            desc_y -= 9
+            original_lines = description.split("\n")
+            
             line_count = 0
-            for line in desc_lines:
-                if line.strip() and line_count < 8:
-                    text = f"- {line.strip()}"
-                    text_width = c.stringWidth(text, font_name_regular, 5)
-                    if text_width > desc_max_width:
-                        ratio = desc_max_width / text_width
-                        text = text[:int(len(text) * ratio) - 2] + "..."
-                    c.drawString(desc_x, desc_y, text)
-                    desc_y -= 7
-                    line_count += 1
+            max_lines = 10
+            for orig_line in original_lines:
+                if orig_line.strip() and line_count < max_lines:
+                    text = f"- {orig_line.strip()}"
+                    wrapped = wrap_text(text, desc_max_width, font_name_regular, 5, c)
+                    for wrap_line in wrapped:
+                        if line_count < max_lines:
+                            c.drawString(desc_x, desc_y, wrap_line)
+                            desc_y -= 6
+                            line_count += 1
             x_offset += col_widths[2]
             
             c.setFont("Helvetica", 8)
