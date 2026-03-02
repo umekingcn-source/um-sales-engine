@@ -23,12 +23,10 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from PIL import Image as PILImage
 
 try:
-    from googletrans import Translator
-    translator = Translator()
+    from deep_translator import GoogleTranslator
     TRANSLATION_AVAILABLE = True
 except:
     TRANSLATION_AVAILABLE = False
-    translator = None
 
 pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
 pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
@@ -59,20 +57,23 @@ _translation_cache = {}
 
 def translate_text(text: str, target_lang: str) -> str:
     """Translate text to target language using Google Translate."""
-    if not text or target_lang == "English" or not TRANSLATION_AVAILABLE:
+    if not text or not text.strip() or target_lang == "English" or not TRANSLATION_AVAILABLE:
         return text
     
-    cache_key = f"{text[:50]}_{target_lang}"
+    cache_key = f"{text[:100]}_{target_lang}"
     if cache_key in _translation_cache:
         return _translation_cache[cache_key]
     
     try:
         lang_code = LANG_CODES.get(target_lang, "en")
-        result = translator.translate(text, dest=lang_code)
-        translated = result.text
-        _translation_cache[cache_key] = translated
-        return translated
-    except:
+        translator = GoogleTranslator(source='en', target=lang_code)
+        translated = translator.translate(text)
+        if translated:
+            _translation_cache[cache_key] = translated
+            return translated
+        return text
+    except Exception as e:
+        print(f"Translation error: {e}")
         return text
 
 def get_font_for_language(lang: str, bold: bool = False) -> str:
