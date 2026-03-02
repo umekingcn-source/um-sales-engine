@@ -18,7 +18,28 @@ from reportlab.platypus import (
 )
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from PIL import Image as PILImage
+
+pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+pdfmetrics.registerFont(UnicodeCIDFont('HYSMyeongJo-Medium'))
+
+CJK_FONTS = {
+    "Japanese": "HeiseiKakuGo-W5",
+    "Korean": "HYSMyeongJo-Medium",
+    "Arabic": "Helvetica",
+    "Hebrew": "Helvetica",
+    "Russian": "Helvetica",
+}
+
+def get_font_for_language(lang: str, bold: bool = False) -> str:
+    """Get appropriate font for language."""
+    if lang in CJK_FONTS:
+        return CJK_FONTS[lang]
+    return "Helvetica-Bold" if bold else "Helvetica"
 
 BRAND_COLOR = colors.HexColor("#003366")
 LIGHT_BLUE = colors.HexColor("#E8F0F8")
@@ -424,14 +445,16 @@ class CatalogPDFGenerator:
         web_info = f"Web: {self.settings.get('company_website', '')} | Phone: {self.settings.get('company_phone', '')} | Prepare By: {self.settings.get('prepared_by', '')}"
         c.drawString(left_x, y_top - 82, web_info)
         
-        c.setFont("Helvetica-Bold", 20)
-        c.setFillColor(self.brand_color)
         lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        
+        c.setFont(font_name, 18)
+        c.setFillColor(self.brand_color)
         title = get_translation(lang, "product_catalog")
-        title_width = c.stringWidth(title, "Helvetica-Bold", 20)
+        title_width = c.stringWidth(title, font_name, 18)
         c.drawString(right_x - title_width, y_top - 18, title)
         
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont(font_name, 8)
         c.setFillColor(BLACK)
         c.drawRightString(right_x, y_top - 52, f"{get_translation(lang, 'catalog_number')}: {catalog_number}")
         c.drawRightString(right_x, y_top - 64, f"{get_translation(lang, 'date')}: {catalog_date}")
@@ -619,15 +642,17 @@ class QuotationPDFGenerator:
         y_info -= 10
         c.drawString(self.margin + 90, y_info, f"Prepare By: {self.settings.get('prepared_by', '')}")
         
-        c.setFillColor(self.brand_color)
-        c.setFont("Helvetica-Bold", 32)
         lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        
+        c.setFillColor(self.brand_color)
+        c.setFont(font_name, 28)
         c.drawRightString(self.page_width - self.margin, y_top - 20, get_translation(lang, "quote"))
         
         right_x = self.page_width - self.margin
         info_x = right_x - 100
         
-        c.setFont("Helvetica", 9)
+        c.setFont(font_name, 9)
         c.setFillColor(BLACK)
         y_quote_info = y_top - 45
         
@@ -650,7 +675,7 @@ class QuotationPDFGenerator:
         c.setFillColor(self.brand_color)
         c.rect(self.margin, customer_y - 20, self.content_width, 20, fill=1, stroke=0)
         c.setFillColor(WHITE)
-        c.setFont("Helvetica-Bold", 10)
+        c.setFont(font_name, 10)
         c.drawString(self.margin + 10, customer_y - 14, get_translation(lang, "customer"))
         
         customer_y -= 35
@@ -842,8 +867,9 @@ class QuotationPDFGenerator:
         
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, stroke=1, fill=0)
         c.setFillColor(BLACK)
-        c.setFont("Helvetica-Bold", 9)
         lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        c.setFont(font_name, 9)
         c.drawCentredString(self.margin + 150, row_y - 16, get_translation(lang, "sub_total"))
         
         x_net = self.margin + sum(col_widths[:6]) + col_widths[6]/2
@@ -868,7 +894,7 @@ class QuotationPDFGenerator:
         c.setFillColor(self.brand_color)
         c.rect(self.margin, row_y - summary_height, self.content_width, summary_height, fill=1, stroke=0)
         c.setFillColor(WHITE)
-        c.setFont("Helvetica-Bold", 10)
+        c.setFont(font_name, 10)
         c.drawCentredString(self.margin + 200, row_y - 17, get_translation(lang, "total_order_amount"))
         
         total_amount = subtotal + shipping_cost
