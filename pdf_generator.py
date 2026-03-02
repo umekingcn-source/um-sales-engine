@@ -22,6 +22,14 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from PIL import Image as PILImage
 
+try:
+    from googletrans import Translator
+    translator = Translator()
+    TRANSLATION_AVAILABLE = True
+except:
+    TRANSLATION_AVAILABLE = False
+    translator = None
+
 pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
 pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
 pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
@@ -34,6 +42,38 @@ CJK_FONTS = {
     "Hebrew": "Helvetica",
     "Russian": "Helvetica",
 }
+
+LANG_CODES = {
+    "English": "en",
+    "Arabic": "ar",
+    "Spanish": "es",
+    "French": "fr",
+    "German": "de",
+    "Korean": "ko",
+    "Japanese": "ja",
+    "Russian": "ru",
+    "Hebrew": "he",
+}
+
+_translation_cache = {}
+
+def translate_text(text: str, target_lang: str) -> str:
+    """Translate text to target language using Google Translate."""
+    if not text or target_lang == "English" or not TRANSLATION_AVAILABLE:
+        return text
+    
+    cache_key = f"{text[:50]}_{target_lang}"
+    if cache_key in _translation_cache:
+        return _translation_cache[cache_key]
+    
+    try:
+        lang_code = LANG_CODES.get(target_lang, "en")
+        result = translator.translate(text, dest=lang_code)
+        translated = result.text
+        _translation_cache[cache_key] = translated
+        return translated
+    except:
+        return text
 
 def get_font_for_language(lang: str, bold: bool = False) -> str:
     """Get appropriate font for language."""
@@ -398,13 +438,17 @@ class CatalogPDFGenerator:
         """Draw category section banner at specified Y position."""
         banner_height = 22
         y = y_top - 5
-        
+
         c.setFillColor(self.brand_color)
         c.rect(self.margin, y - banner_height, self.content_width, banner_height, fill=1, stroke=0)
+
+        lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        translated_category = translate_text(category, lang)
         
         c.setFillColor(WHITE)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(self.margin + 10, y - 15, category.upper())
+        c.setFont(font_name, 11)
+        c.drawString(self.margin + 10, y - 15, translated_category.upper())
     
     def _draw_product_row(self, c, products, y_top):
         """Draw a row of products (up to 3)."""
@@ -493,24 +537,30 @@ class CatalogPDFGenerator:
             c.drawCentredString(x + width/2, img_y + img_height/2, "No Image")
         
         text_y = img_y - 12
+        lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        font_name_regular = get_font_for_language(lang, bold=False)
+        
         c.setFillColor(self.brand_color)
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont(font_name, 7)
         
         name = product.get("name", "")
+        name = translate_text(name, lang)
         if len(name) > 28:
             name = name[:25] + "..."
         c.drawString(x + 8, text_y, name)
         
         text_y -= 10
         c.setFillColor(GRAY)
-        c.setFont("Helvetica", 6)
+        c.setFont(font_name_regular, 6)
         c.drawString(x + 8, text_y, f"({product.get('sku', '')})")
         
         text_y -= 12
         c.setFillColor(BLACK)
-        c.setFont("Helvetica", 6)
+        c.setFont(font_name_regular, 5)
         
         description = product.get("description", "")
+        description = translate_text(description, lang)
         specs = description.split("\n")[:5]
         for spec in specs:
             if spec.strip():
@@ -807,22 +857,29 @@ class QuotationPDFGenerator:
             desc_y = row_y - 11
             desc_max_width = col_widths[2] - 6
             
-            c.setFont("Helvetica-Bold", 6)
+            lang = getattr(self, 'language', 'English')
+            font_name = get_font_for_language(lang, bold=True)
+            font_name_regular = get_font_for_language(lang, bold=False)
+            
+            c.setFont(font_name, 6)
             name = product.get("name", "")
-            name_width = c.stringWidth(name, "Helvetica-Bold", 6)
+            name = translate_text(name, lang)
+            name_width = c.stringWidth(name, font_name, 6)
             if name_width > desc_max_width:
                 ratio = desc_max_width / name_width
                 name = name[:int(len(name) * ratio) - 2] + "..."
             c.drawString(desc_x, desc_y, name)
             
-            c.setFont("Helvetica", 5)
-            desc_lines = product.get("description", "").split("\n")
+            c.setFont(font_name_regular, 5)
+            description = product.get("description", "")
+            description = translate_text(description, lang)
+            desc_lines = description.split("\n")
             desc_y -= 9
             line_count = 0
             for line in desc_lines:
                 if line.strip() and line_count < 8:
                     text = f"- {line.strip()}"
-                    text_width = c.stringWidth(text, "Helvetica", 5)
+                    text_width = c.stringWidth(text, font_name_regular, 5)
                     if text_width > desc_max_width:
                         ratio = desc_max_width / text_width
                         text = text[:int(len(text) * ratio) - 2] + "..."
