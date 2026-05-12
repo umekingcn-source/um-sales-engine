@@ -421,12 +421,15 @@ class CatalogPDFGenerator:
         if not catalog_date:
             catalog_date = datetime.now().strftime("%B %d, %Y")
         
-        products_by_category = {}
+        products_by_part = {}
         for product in products:
+            part = product.get("part", "Other")
             cat = product.get("category", "Other")
-            if cat not in products_by_category:
-                products_by_category[cat] = []
-            products_by_category[cat].append(product)
+            if part not in products_by_part:
+                products_by_part[part] = {}
+            if cat not in products_by_part[part]:
+                products_by_part[part][cat] = []
+            products_by_part[part][cat].append(product)
         
         page_num = 1
         header_height = 105
@@ -441,8 +444,9 @@ class CatalogPDFGenerator:
         self._draw_header(c, catalog_number, catalog_date, True)
         current_y = content_top
         
-        for cat_idx, (category, cat_products) in enumerate(products_by_category.items()):
-            needed_height = category_banner_height + row_height
+        part_banner_height = 30
+        for part_idx, (part_name, categories_dict) in enumerate(products_by_part.items()):
+            needed_height = part_banner_height + category_banner_height + row_height
             
             if current_y - needed_height < content_bottom:
                 self._draw_footer(c, page_num)
@@ -451,28 +455,57 @@ class CatalogPDFGenerator:
                 self._draw_header(c, catalog_number, catalog_date, False)
                 current_y = content_top
             
-            self._draw_category_banner_at(c, category, current_y)
-            current_y -= category_banner_height
+            self._draw_part_banner_at(c, part_name, current_y)
+            current_y -= part_banner_height
             
-            for row_start in range(0, len(cat_products), 3):
-                row_products = cat_products[row_start:row_start + 3]
+            for cat_idx, (category, cat_products) in enumerate(categories_dict.items()):
+                needed_cat_height = category_banner_height + row_height
                 
-                if current_y - row_height < content_bottom:
+                if current_y - needed_cat_height < content_bottom:
                     self._draw_footer(c, page_num)
                     c.showPage()
                     page_num += 1
                     self._draw_header(c, catalog_number, catalog_date, False)
                     current_y = content_top
                 
-                self._draw_product_row(c, row_products, current_y)
-                current_y -= row_height
-            
-            current_y -= category_spacing
+                self._draw_category_banner_at(c, category, current_y)
+                current_y -= category_banner_height
+                
+                for row_start in range(0, len(cat_products), 3):
+                    row_products = cat_products[row_start:row_start + 3]
+                    
+                    if current_y - row_height < content_bottom:
+                        self._draw_footer(c, page_num)
+                        c.showPage()
+                        page_num += 1
+                        self._draw_header(c, catalog_number, catalog_date, False)
+                        current_y = content_top
+                    
+                    self._draw_product_row(c, row_products, current_y)
+                    current_y -= row_height
+                
+                current_y -= category_spacing
         
         self._draw_footer(c, page_num)
         c.save()
         buffer.seek(0)
         return buffer
+    
+    def _draw_part_banner_at(self, c, part_name, y_top):
+        """Draw main part section banner (larger, distinct style)."""
+        banner_height = 28
+        y = y_top - 3
+        
+        c.setFillColor(colors.HexColor("#1a3a6e"))
+        c.rect(self.margin, y - banner_height, self.content_width, banner_height, fill=1, stroke=0)
+        
+        lang = getattr(self, 'language', 'English')
+        font_name = get_font_for_language(lang, bold=True)
+        translated_part = translate_text(part_name, lang)
+        
+        c.setFillColor(WHITE)
+        c.setFont(font_name, 13)
+        c.drawString(self.margin + 10, y - 19, translated_part.upper())
     
     def _draw_category_banner_at(self, c, category, y_top):
         """Draw category section banner at specified Y position."""
