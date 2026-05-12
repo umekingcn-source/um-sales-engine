@@ -74,6 +74,27 @@ st.markdown("""
         border-radius: 5px;
         margin: 1rem 0;
     }
+    /* Long bilingual category labels: full-width trigger + readable dropdown options */
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+        min-width: 100% !important;
+    }
+    div[data-baseweb="popover"] li[role="option"],
+    div[data-baseweb="menu"] li[role="option"] {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        line-height: 1.35 !important;
+        min-height: 2.5rem !important;
+        height: auto !important;
+        align-items: flex-start !important;
+        padding-top: 0.45rem !important;
+        padding-bottom: 0.45rem !important;
+    }
+    div[data-baseweb="popover"] ul,
+    div[data-baseweb="menu"] ul {
+        max-width: min(96vw, 920px) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -194,14 +215,14 @@ def show_product_list():
         st.info("No products in inventory. Add your first product using the 'Add/Edit Product' tab.")
         return
     
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        # Show all latest preset categories for complete bilingual list
-        categories = ["All"] + dm.PRESET_CATEGORIES
-        selected_category = st.selectbox("Filter by Category", categories)
-    
-    with col2:
-        search = st.text_input("Search products", placeholder="Enter SKU or product name...")
+    # Full-width category filter so long bilingual labels are not truncated in the dropdown
+    categories = ["All"] + dm.PRESET_CATEGORIES
+    selected_category = st.selectbox("Filter by Category", categories, key="product_list_category_filter")
+    search = st.text_input(
+        "Search products",
+        placeholder="Enter SKU or product name...",
+        key="product_list_search",
+    )
     
     filtered_df = df.copy()
     if selected_category != "All":
@@ -267,7 +288,7 @@ def show_product_form():
     all_categories = list(dict.fromkeys(visible_preset + existing_categories))
     category_options = all_categories + ["+ New Category"]
     
-    cat_col1, cat_col2 = st.columns([3, 1])
+    cat_col1, cat_col2 = st.columns([5, 1])
     with cat_col1:
         if existing_product and existing_product["category"] in all_categories:
             default_idx = all_categories.index(existing_product["category"])
@@ -500,13 +521,17 @@ def show_catalog_creator():
         st.warning("No products available. Please add products first.")
         return
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([3, 1])
     
     with col1:
         st.subheader("Select Products")
         
         categories = ["All"] + dm.PRESET_CATEGORIES
-        selected_category = st.selectbox("Filter by Category", categories, key="catalog_category")
+        selected_category = st.selectbox(
+            "Filter by Category",
+            categories,
+            key="catalog_category",
+        )
         
         if selected_category != "All":
             filtered_df = df[df["category"] == selected_category]
