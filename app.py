@@ -196,7 +196,8 @@ def show_product_list():
     
     col1, col2 = st.columns([1, 3])
     with col1:
-        categories = ["All"] + dm.get_categories()
+        # Show all latest preset categories for complete bilingual list
+        categories = ["All"] + dm.PRESET_CATEGORIES
         selected_category = st.selectbox("Filter by Category", categories)
     
     with col2:
@@ -259,27 +260,7 @@ def show_product_form():
     else:
         st.subheader("Add New Product")
     
-    preset_categories = [
-        "New Employee Onboarding Pack",
-        "Coffee / Baking Shop Merch Kit",
-        "Corporate Promotional Package",
-        "Cosmetics Membership Package",
-        "Esports Gaming Exhibition Swag",
-        "Eco-friendly Activity Pack",
-        "Fishing Lure Equipment Set",
-        "Globally Theme Park Water World Resort",
-        "Gym Membership Package",
-        "NGO or Healthcare Charity",
-        "On-site Branding for Large Events",
-        "Outdoor Hiking Gear Set",
-        "Pet Love Package",
-        "Sports Brand Collection Swag",
-        "Souvenir Gift Items",
-        "The Sand-Free Beach Vacation Kit",
-        "Travel Agency VIP Kit",
-        "University Campus Spirit & Alumni Kit",
-    ]
-    
+    preset_categories = dm.PRESET_CATEGORIES
     hidden_categories = dm.get_hidden_categories()
     visible_preset = [c for c in preset_categories if c not in hidden_categories]
     existing_categories = dm.get_categories()
@@ -524,7 +505,7 @@ def show_catalog_creator():
     with col1:
         st.subheader("Select Products")
         
-        categories = ["All"] + dm.get_categories()
+        categories = ["All"] + dm.PRESET_CATEGORIES
         selected_category = st.selectbox("Filter by Category", categories, key="catalog_category")
         
         if selected_category != "All":
@@ -960,26 +941,7 @@ def show_settings():
         st.subheader("Category Management")
         st.caption("Manage preset categories for product classification")
         
-        preset_categories = [
-            "New Employee Onboarding Pack",
-            "Coffee / Baking Shop Merch Kit",
-            "Corporate Promotional Package",
-            "Cosmetics Membership Package",
-            "Esports Gaming Exhibition Swag",
-            "Eco-friendly Activity Pack",
-            "Fishing Lure Equipment Set",
-            "Globally Theme Park Water World Resort",
-            "Gym Membership Package",
-            "NGO or Healthcare Charity",
-            "On-site Branding for Large Events",
-            "Outdoor Hiking Gear Set",
-            "Pet Love Package",
-            "Sports Brand Collection Swag",
-            "Souvenir Gift Items",
-            "The Sand-Free Beach Vacation Kit",
-            "Travel Agency VIP Kit",
-            "University Campus Spirit & Alumni Kit",
-        ]
+        preset_categories = dm.PRESET_CATEGORIES
         
         hidden_categories = dm.get_hidden_categories()
         
