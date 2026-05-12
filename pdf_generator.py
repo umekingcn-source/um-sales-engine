@@ -4,6 +4,7 @@ Handles generation of Product Catalogs and Quotations using ReportLab.
 """
 
 import os
+import re
 from datetime import datetime
 from io import BytesIO
 
@@ -394,6 +395,31 @@ def get_absolute_path(relative_path):
     return None
 
 
+KIT_COVER_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def get_kit_cover_absolute_path(category: str):
+    """
+    Resolve representative kit image from assets/images/kit-covers/{NN}.ext
+    where NN matches the leading number in category (1. ... 24.).
+    """
+    if not category or not isinstance(category, str):
+        return None
+    m = re.match(r"^\s*(\d+)\.", category.strip())
+    if not m:
+        return None
+    num = int(m.group(1))
+    if num < 1 or num > 24:
+        return None
+    folder = os.path.join(BASE_DIR, "assets", "images", "kit-covers")
+    stem = os.path.join(folder, f"{num:02d}")
+    for ext in KIT_COVER_EXTENSIONS:
+        p = stem + ext
+        if os.path.exists(p):
+            return p
+    return None
+
+
 def hex_to_color(hex_string):
     """Convert hex color string to ReportLab color."""
     return colors.HexColor(hex_string)
@@ -434,7 +460,7 @@ class CatalogPDFGenerator:
         page_num = 1
         header_height = 105
         footer_height = 40
-        category_banner_height = 28
+        category_banner_height = 34
         row_height = 240
         category_spacing = 15
         
@@ -508,20 +534,48 @@ class CatalogPDFGenerator:
         c.drawString(self.margin + 10, y - 19, translated_part.upper())
     
     def _draw_category_banner_at(self, c, category, y_top):
-        """Draw category section banner at specified Y position."""
-        banner_height = 22
-        y = y_top - 5
+        """Draw category section banner at specified Y position (optional kit cover on the right)."""
+        banner_height = 34
+        y = y_top - 4
+        cover_size = 28
+        cover_x = self.page_width - self.margin - cover_size - 6
+        cover_y = y - banner_height + 4
 
         c.setFillColor(self.brand_color)
         c.rect(self.margin, y - banner_height, self.content_width, banner_height, fill=1, stroke=0)
 
-        lang = getattr(self, 'language', 'English')
+        cover_path = get_kit_cover_absolute_path(category)
+        if cover_path:
+            try:
+                c.drawImage(
+                    cover_path,
+                    cover_x,
+                    cover_y,
+                    width=cover_size,
+                    height=cover_size,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+            except Exception:
+                pass
+
+        lang = getattr(self, 'language', "English")
         font_name = get_font_for_language(lang, bold=True)
         translated_category = translate_text(category, lang)
-        
+        display = translated_category.upper()
+        font_size = 10
         c.setFillColor(WHITE)
-        c.setFont(font_name, 11)
-        c.drawString(self.margin + 10, y - 15, translated_category.upper())
+        c.setFont(font_name, font_size)
+        max_text_width = max(40, cover_x - self.margin - 14)
+        while display and c.stringWidth(display, font_name, font_size) > max_text_width and len(display) > 8:
+            display = display[:-2] + ".."
+
+        clip = c.beginPath()
+        clip.rect(self.margin + 4, y - banner_height + 2, max_text_width + 4, banner_height - 4)
+        c.saveState()
+        c.clipPath(clip, stroke=0, fill=0)
+        c.drawString(self.margin + 8, y - 21, display)
+        c.restoreState()
     
     def _draw_product_row(self, c, products, y_top):
         """Draw a row of products (up to 3)."""
