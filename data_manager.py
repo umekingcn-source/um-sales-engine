@@ -4,6 +4,7 @@ Handles CSV data persistence and image file management.
 """
 
 import os
+import re
 import pandas as pd
 from PIL import Image
 import shutil
@@ -26,19 +27,123 @@ def init_directories():
     os.makedirs(IMAGES_DIR, exist_ok=True)
 
 
+# Four major parts (大类) — bilingual labels for UI & PDF
+PRESET_PARTS = [
+    "Part 1: Corporate & Employee Experience (企业职场与员工体验)",
+    "Part 2: Institutional, Health & Education (机构、健康与教育)",
+    "Part 3: Outdoor, Travel & Entertainment (户外、旅游与娱乐)",
+    "Part 4: Retail, Lifestyle & Hospitality (零售、生活方式与招待)",
+]
+
+# 24 kit categories (套装) — aligned with latest bilingual list
+PRESET_CATEGORIES = [
+    "1. New Employee Onboarding Pack (新员工入职礼包)",
+    "2. Employee Wellness Gift Set (员工健康关怀)",
+    "3. Spring Corporate Gift Set (春季企业答谢)",
+    "4. Corporate Promotional Package (企业通用促销包)",
+    "5. On-site Branding for Large Events (大型活动现场周边)",
+    "6. ABA Therapy Toolkit Gift (ABA 特教感官工具)",
+    "7. NGO or Healthcare Charity (NGO/医疗慈善机构)",
+    "8. Gym Membership Package (健身房会员入会包)",
+    "9. Sports Brand Collection Swag (运动品牌联名周边)",
+    "10. University Campus Spirit & Alumni Kit (大学校园/校友纪念)",
+    "11. Eco-friendly Activity Pack (环保主题活动套装)",
+    "12. Summer Beach Vacation Kit (夏日沙滩度假)",
+    "13. Outdoor Hiking Gear Set (户外徒步装备)",
+    "14. Fishing Lure Equipment Set (路亚钓鱼装备)",
+    "15. Travel Agency VIP Kit (旅行社 VIP 礼遇)",
+    "16. Globally Theme Park Water World Resort (主题乐园/水上世界)",
+    "17. Music Festival / Rave Survival Kit (音乐节/狂欢生存包)",
+    "18. Esports Gaming Exhibition Swag (电竞游戏展会周边)",
+    "19. Coffee / Baking Shop Merch Kit (精品咖啡/烘焙店周边)",
+    "20. Bar Craft Brewery Swag (精酿酒吧联名周边)",
+    "21. Cosmetics Membership Package (美妆品牌会员礼盒)",
+    "22. Jewelry Packaging Set (首饰高定包装套装)",
+    "23. Pet Love Package (宠物关怀/品牌主题礼盒)",
+    "24. Souvenir Gift Items (高端旅游纪念品)",
+]
+
+# Map each preset kit to its major part (for PDF grouping & filters)
+CATEGORY_TO_PART = {}
+for _i, _cat in enumerate(PRESET_CATEGORIES):
+    if _i < 5:
+        CATEGORY_TO_PART[_cat] = PRESET_PARTS[0]
+    elif _i < 11:
+        CATEGORY_TO_PART[_cat] = PRESET_PARTS[1]
+    elif _i < 18:
+        CATEGORY_TO_PART[_cat] = PRESET_PARTS[2]
+    else:
+        CATEGORY_TO_PART[_cat] = PRESET_PARTS[3]
+
+
+def get_part_for_category(category: str) -> str:
+    """Return major part label for a preset category, or empty string if unknown/custom."""
+    if not category or not isinstance(category, str):
+        return ""
+    return CATEGORY_TO_PART.get(category.strip(), "")
+
+
+def get_preset_categories_for_part(part: str) -> list:
+    """List preset kit categories that belong to a given major part."""
+    if not part:
+        return []
+    return [c for c in PRESET_CATEGORIES if CATEGORY_TO_PART.get(c) == part]
+
+
+def normalize_category_value(category: str) -> str:
+    """Map legacy / mangled category strings to current PRESET_CATEGORIES by leading number."""
+    if not category or not isinstance(category, str):
+        return ""
+    cat = category.strip()
+    if cat in CATEGORY_TO_PART:
+        return cat
+    m = re.match(r"^\s*(\d+)\.", cat)
+    if m:
+        idx = int(m.group(1))
+        if 1 <= idx <= len(PRESET_CATEGORIES):
+            return PRESET_CATEGORIES[idx - 1]
+    return cat
+
+
+def normalize_products_df(df: pd.DataFrame) -> tuple:
+    """Ensure part column exists and sync part/category for preset kits. Returns (df, changed)."""
+    changed = False
+    if "part" not in df.columns:
+        df["part"] = ""
+        changed = True
+    for idx in df.index:
+        old_cat = df.at[idx, "category"]
+        old_cat_s = str(old_cat).strip() if pd.notna(old_cat) else ""
+        new_cat = normalize_category_value(old_cat_s)
+        if new_cat != old_cat_s:
+            df.at[idx, "category"] = new_cat
+            changed = True
+        p = get_part_for_category(new_cat)
+        old_p = str(df.at[idx, "part"]).strip() if pd.notna(df.at[idx, "part"]) else ""
+        if p:
+            if old_p != p:
+                df.at[idx, "part"] = p
+                changed = True
+        # custom category: keep existing part if any
+    return df, changed
+
+
 def get_products_df() -> pd.DataFrame:
     """Load products from CSV file."""
     init_directories()
     if os.path.exists(PRODUCTS_CSV):
-        df = pd.read_csv(PRODUCTS_CSV)
+        df = pd.read_csv(PRODUCTS_CSV, encoding="utf-8")
+        df, changed = normalize_products_df(df)
+        if changed:
+            save_products_df(df)
         return df
     else:
         columns = [
-            "sku", "name", "category", "description", 
+            "sku", "name", "category", "description",
             "unit_price", "moq", "image_path", "image_path_2", "image_path_3",
             "packaging_rate", "carton_l", "carton_w", "carton_h",
             "gw_per_ctn", "supplier_link", "supplier_link_2", "supplier_link_3",
-            "created_at", "updated_at"
+            "created_at", "updated_at", "part",
         ]
         return pd.DataFrame(columns=columns)
 
@@ -46,7 +151,7 @@ def get_products_df() -> pd.DataFrame:
 def save_products_df(df: pd.DataFrame):
     """Save products DataFrame to CSV file."""
     init_directories()
-    df.to_csv(PRODUCTS_CSV, index=False)
+    df.to_csv(PRODUCTS_CSV, index=False, encoding="utf-8")
 
 
 def add_product(
@@ -66,7 +171,8 @@ def add_product(
     gw_per_ctn: float = 0,
     supplier_link: str = "",
     supplier_link_2: str = "",
-    supplier_link_3: str = ""
+    supplier_link_3: str = "",
+    part: str = None,
 ) -> bool:
     """Add a new product to the inventory."""
     df = get_products_df()
@@ -87,10 +193,15 @@ def add_product(
         image_path_3 = save_product_image(f"{sku}_3", image_file_3)
     
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cat_norm = normalize_category_value(category.strip()) if category else ""
+    row_category = cat_norm if cat_norm else (category or "")
+    row_part = (part or "").strip() if part else ""
+    if not row_part:
+        row_part = get_part_for_category(row_category) or ""
     new_row = {
         "sku": sku,
         "name": name,
-        "category": category,
+        "category": row_category,
         "description": description,
         "unit_price": unit_price,
         "moq": moq,
@@ -106,7 +217,8 @@ def add_product(
         "supplier_link_2": supplier_link_2,
         "supplier_link_3": supplier_link_3,
         "created_at": now,
-        "updated_at": now
+        "updated_at": now,
+        "part": row_part,
     }
     
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
@@ -131,7 +243,8 @@ def update_product(
     gw_per_ctn: float = None,
     supplier_link: str = None,
     supplier_link_2: str = None,
-    supplier_link_3: str = None
+    supplier_link_3: str = None,
+    part: str = None,
 ) -> bool:
     """Update an existing product."""
     df = get_products_df()
@@ -144,7 +257,15 @@ def update_product(
     if name is not None:
         df.at[idx, "name"] = name
     if category is not None:
-        df.at[idx, "category"] = category
+        cat_stripped = category.strip()
+        cat_norm = normalize_category_value(cat_stripped) or cat_stripped
+        df.at[idx, "category"] = cat_norm
+    if part is not None:
+        df.at[idx, "part"] = (part.strip() if isinstance(part, str) else part) or ""
+    elif category is not None:
+        p = get_part_for_category(str(df.at[idx, "category"]))
+        if p:
+            df.at[idx, "part"] = p
     if description is not None:
         df.at[idx, "description"] = description
     if unit_price is not None:
@@ -305,34 +426,6 @@ def save_logo(uploaded_file) -> str:
     
     return relative_path
 
-
-# Latest 24 bilingual categories (Part 1-4)
-PRESET_CATEGORIES = [
-    "1. New Employee Onboarding Pack (新员工入职礼包)",
-    "2. Employee Wellness Gift Set (员工健康关怀)",
-    "3. Spring Corporate Gift Set (春季企业答谢)",
-    "4. Corporate Promotional Package (企业通用促销包)",
-    "5. On-site Branding for Large Events (大型活动现场周边)",
-    "6. ABA Therapy Toolkit Gift (ABA 特教感官工具)",
-    "7. NGO or Healthcare Charity (NGO/医疗慈善机构)",
-    "8. Gym Membership Package (健身会员礼包)",
-    "9. Sports Brand Collection Swag (运动品牌联名周边)",
-    "10. University Campus Spirit & Alumni Kit (大学校园/校友纪念)",
-    "11. Eco-friendly Activity Pack (环保主题活动礼包)",
-    "12. Summer Beach Vacation Kit (夏日沙滩度假)",
-    "13. Outdoor Hiking Gear Set (户外徒步装备)",
-    "14. Fishing Lure Equipment Set (路亚钓鱼装备)",
-    "15. Travel Agency VIP Kit (旅行社 VIP 礼包)",
-    "16. Globally Theme Park Water World Resort (主题乐园/水上世界)",
-    "17. Music Festival / Rave Survival Kit (音乐节/狂欢生存包)",
-    "18. Esports Gaming Exhibition Swag (电竞游戏展览周边)",
-    "19. Coffee / Baking Shop Merch Kit (精品咖啡/烘焙店周边)",
-    "20. Bar Craft Brewery Swag (精酿酒吧联名周边)",
-    "21. Cosmetics Membership Package (美妆品牌会员礼盒)",
-    "22. Jewelry Packaging Set (首饰/高定包装套装)",
-    "23. Pet Love Package (宠物关怀/品牌主题礼包)",
-    "24. Souvenir Gift Items (高端旅游纪念品)",
-]
 
 def get_categories() -> list:
     """Get unique categories from products (bilingual names)."""

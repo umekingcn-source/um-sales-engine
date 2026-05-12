@@ -7,11 +7,17 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import os
+import hashlib
 
 import data_manager as dm
 import pdf_generator as pdfgen
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _category_button_key(prefix: str, label: str) -> str:
+    """Stable short key for Streamlit widgets from long bilingual category strings."""
+    return f"{prefix}_{hashlib.sha256(label.encode('utf-8')).hexdigest()[:16]}"
 
 
 def get_image_path(relative_path):
@@ -215,9 +221,24 @@ def show_product_list():
         st.info("No products in inventory. Add your first product using the 'Add/Edit Product' tab.")
         return
     
-    # Full-width category filter so long bilingual labels are not truncated in the dropdown
-    categories = ["All"] + dm.PRESET_CATEGORIES
-    selected_category = st.selectbox("Filter by Category", categories, key="product_list_category_filter")
+    part_choices = ["全部 (All)"] + dm.PRESET_PARTS
+    selected_part = st.selectbox(
+        "大类 (Major category / Part)",
+        part_choices,
+        key="product_list_part_filter",
+    )
+    hidden_cats = dm.get_hidden_categories()
+    if selected_part == "全部 (All)":
+        cat_choices = ["All"] + [c for c in dm.PRESET_CATEGORIES if c not in hidden_cats]
+    else:
+        cat_choices = ["All"] + [
+            c for c in dm.get_preset_categories_for_part(selected_part) if c not in hidden_cats
+        ]
+    selected_category = st.selectbox(
+        "套装 (Kit category)",
+        cat_choices,
+        key="product_list_category_filter",
+    )
     search = st.text_input(
         "Search products",
         placeholder="Enter SKU or product name...",
@@ -225,6 +246,8 @@ def show_product_list():
     )
     
     filtered_df = df.copy()
+    if selected_part != "全部 (All)":
+        filtered_df = filtered_df[filtered_df["part"] == selected_part]
     if selected_category != "All":
         filtered_df = filtered_df[filtered_df["category"] == selected_category]
     
@@ -250,7 +273,11 @@ def show_product_list():
             
             with col2:
                 st.markdown(f"**{product['name']}**")
-                st.caption(f"SKU: {product['sku']} | Category: {product['category']}")
+                part_line = product.get("part", "") or ""
+                if part_line:
+                    st.caption(f"SKU: {product['sku']} | {part_line} → {product['category']}")
+                else:
+                    st.caption(f"SKU: {product['sku']} | Category: {product['category']}")
                 st.caption(f"Price: ${product['unit_price']:.2f} | MOQ: {product.get('moq', 'N/A')}")
             
             with col3:
@@ -281,43 +308,76 @@ def show_product_form():
     else:
         st.subheader("Add New Product")
     
-    preset_categories = dm.PRESET_CATEGORIES
     hidden_categories = dm.get_hidden_categories()
-    visible_preset = [c for c in preset_categories if c not in hidden_categories]
     existing_categories = dm.get_categories()
-    all_categories = list(dict.fromkeys(visible_preset + existing_categories))
-    category_options = all_categories + ["+ New Category"]
-    
+    preset_parts = dm.PRESET_PARTS
+
+    if existing_product:
+        ep = (existing_product.get("part") or "").strip()
+        if ep in preset_parts:
+            default_pidx = preset_parts.index(ep)
+        else:
+            inferred = dm.get_part_for_category(str(existing_product.get("category", "")))
+            default_pidx = preset_parts.index(inferred) if inferred in preset_parts else 0
+    else:
+        default_pidx = 0
+
+    major_col1, major_col2 = st.columns([5, 1])
+    with major_col1:
+        selected_part = st.selectbox(
+            "大类 (Major category / Part)",
+            preset_parts,
+            index=default_pidx,
+            key="product_form_major_part",
+        )
+    with major_col2:
+        st.write("")
+
+    cats_in_part = [
+        c for c in dm.get_preset_categories_for_part(selected_part) if c not in hidden_categories
+    ]
+    ec = str(existing_product.get("category", "")).strip() if existing_product else ""
+    if ec and ec not in dm.PRESET_CATEGORIES:
+        if ec not in cats_in_part:
+            cats_in_part.insert(0, ec)
+    for c in existing_categories:
+        if c not in cats_in_part and dm.get_part_for_category(c) == selected_part:
+            cats_in_part.append(c)
+    cats_in_part = list(dict.fromkeys(cats_in_part))
+    category_options = cats_in_part + ["+ New Category"]
+
+    if ec in category_options:
+        cat_default_idx = category_options.index(ec)
+    else:
+        cat_default_idx = 0
+
+    part_key_suffix = str(preset_parts.index(selected_part))
     cat_col1, cat_col2 = st.columns([5, 1])
     with cat_col1:
-        if existing_product and existing_product["category"] in all_categories:
-            default_idx = all_categories.index(existing_product["category"])
-        else:
-            default_idx = 0 if all_categories else 0
-        
         selected_category = st.selectbox(
-            "Category",
+            "套装 (Kit category)",
             category_options,
-            index=default_idx,
-            key="product_category_select"
+            index=min(cat_default_idx, len(category_options) - 1),
+            key=f"product_form_kit_p{part_key_suffix}",
         )
-    
     with cat_col2:
         st.write("")
         if selected_category and selected_category != "+ New Category":
-            if st.button("🗑️ Hide", key="hide_cat_btn", help="Hide this category from list"):
+            if st.button("🗑️ Hide", key="hide_cat_btn", help="Hide this kit from preset lists"):
                 dm.hide_category(selected_category)
                 st.rerun()
-    
+
     if selected_category == "+ New Category":
         new_category_input = st.text_input(
-            "Enter new category name:",
-            placeholder="e.g., WRITING INSTRUMENTS",
+            "Enter new kit category name:",
+            placeholder="e.g., Custom VIP Gift Set",
             key="new_category_input"
         )
         category = new_category_input.strip() if new_category_input else ""
     else:
         category = selected_category
+
+    part_for_save = selected_part
     
     with st.form("product_form"):
         col1, col2 = st.columns(2)
@@ -461,6 +521,7 @@ def show_product_form():
                         sku=sku,
                         name=name,
                         category=category,
+                        part=part_for_save,
                         description=description,
                         unit_price=unit_price,
                         moq=moq,
@@ -487,6 +548,7 @@ def show_product_form():
                         sku=sku,
                         name=name,
                         category=category,
+                        part=part_for_save,
                         description=description,
                         unit_price=unit_price,
                         moq=moq,
@@ -526,17 +588,30 @@ def show_catalog_creator():
     with col1:
         st.subheader("Select Products")
         
-        categories = ["All"] + dm.PRESET_CATEGORIES
+        part_choices = ["全部 (All)"] + dm.PRESET_PARTS
+        selected_catalog_part = st.selectbox(
+            "大类 (Part)",
+            part_choices,
+            key="catalog_part_filter",
+        )
+        hidden_c = dm.get_hidden_categories()
+        if selected_catalog_part == "全部 (All)":
+            cat_choices = ["All"] + [c for c in dm.PRESET_CATEGORIES if c not in hidden_c]
+        else:
+            cat_choices = ["All"] + [
+                c for c in dm.get_preset_categories_for_part(selected_catalog_part) if c not in hidden_c
+            ]
         selected_category = st.selectbox(
-            "Filter by Category",
-            categories,
+            "套装 (Kit)",
+            cat_choices,
             key="catalog_category",
         )
         
+        filtered_df = df.copy()
+        if selected_catalog_part != "全部 (All)":
+            filtered_df = filtered_df[filtered_df["part"] == selected_catalog_part]
         if selected_category != "All":
-            filtered_df = df[df["category"] == selected_category]
-        else:
-            filtered_df = df
+            filtered_df = filtered_df[filtered_df["category"] == selected_category]
         
         all_skus = filtered_df["sku"].tolist()
         product_options = {row["sku"]: f"{row['sku']} - {row['name']} (${row['unit_price']:.2f})" 
@@ -964,37 +1039,35 @@ def show_settings():
     
     with tab4:
         st.subheader("Category Management")
-        st.caption("Manage preset categories for product classification")
-        
-        preset_categories = dm.PRESET_CATEGORIES
+        st.caption("24 个套装分类按四大类分组；隐藏后不会在筛选与新增产品的预设列表中出现。")
         
         hidden_categories = dm.get_hidden_categories()
         
-        st.markdown("**Active Categories**")
-        active_cats = [c for c in preset_categories if c not in hidden_categories]
+        for part_label in dm.PRESET_PARTS:
+            st.markdown(f"**{part_label}**")
+            part_cats = dm.get_preset_categories_for_part(part_label)
+            active_in_part = [c for c in part_cats if c not in hidden_categories]
+            if active_in_part:
+                for cat in active_in_part:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"• {cat}")
+                    with col2:
+                        if st.button("🗑️", key=_category_button_key("hide", cat), help=f"Hide {cat}"):
+                            dm.hide_category(cat)
+                            st.rerun()
+            else:
+                st.caption("（此大类下套装均已隐藏）")
+            st.divider()
         
-        if active_cats:
-            for cat in active_cats:
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.write(f"• {cat}")
-                with col2:
-                    if st.button("🗑️", key=f"hide_{cat}", help=f"Hide {cat}"):
-                        dm.hide_category(cat)
-                        st.rerun()
-        else:
-            st.info("No active preset categories")
-        
-        st.divider()
-        
-        st.markdown("**Hidden Categories**")
+        st.markdown("**已隐藏的套装**")
         if hidden_categories:
             for cat in hidden_categories:
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.write(f"• {cat}")
                 with col2:
-                    if st.button("♻️", key=f"unhide_{cat}", help=f"Restore {cat}"):
+                    if st.button("♻️", key=_category_button_key("unhide", cat), help=f"Restore {cat}"):
                         dm.unhide_category(cat)
                         st.rerun()
         else:
