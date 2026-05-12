@@ -378,45 +378,133 @@ def show_product_form():
         category = selected_category
 
     part_for_save = selected_part
+
+    st.markdown("---")
+    if not existing_product:
+        import import1688 as i1688
+
+        with st.expander("🔗 从 1688 链接抓取（主图 / 标题 / 描述 / 参考价 / 箱规与单箱毛重）", expanded=False):
+            st.caption(
+                "粘贴 `detail.1688.com/offer/数字` 或含 **offer/商品ID** 的链接。"
+                "价格为人民币时按 **×0.14** 粗略折算为美元占位，请务必核对。"
+                "云端 IP 常被风控；本地运行成功率更高。可选：`pip install playwright && playwright install chromium`。"
+            )
+            u1688 = st.text_area(
+                "1688 商品页链接",
+                key="i1688_url_input",
+                height=72,
+                placeholder="https://detail.1688.com/offer/680789723446.html",
+            )
+            if st.button("抓取并填充下方表单", type="secondary", key="i1688_fetch_btn"):
+                res = i1688.fetch_1688_offer(u1688.strip())
+                if not res.ok:
+                    st.error(res.error or "抓取失败")
+                else:
+                    st.session_state["add_sku"] = f"1688-{res.offer_id}"
+                    st.session_state["add_name"] = res.title or ""
+                    st.session_state["add_unit_price"] = float(res.unit_price_usd or 0.0)
+                    st.session_state["add_moq"] = int(res.moq or 100)
+                    st.session_state["add_packaging_rate"] = int(res.packaging_rate or 1)
+                    st.session_state["add_carton_l"] = float(res.carton_l or 0.0)
+                    st.session_state["add_carton_w"] = float(res.carton_w or 0.0)
+                    st.session_state["add_carton_h"] = float(res.carton_h or 0.0)
+                    st.session_state["add_gw"] = float(res.gw_per_ctn or 0.0)
+                    st.session_state["add_desc"] = (res.description or res.title or "").strip()
+                    st.session_state["add_supplier1"] = res.source_url or ""
+                    if res.main_image_bytes:
+                        st.session_state["i1688_img_bytes"] = res.main_image_bytes
+                        st.session_state["i1688_img_name"] = res.main_image_filename or "1688_main.jpg"
+                    else:
+                        st.session_state.pop("i1688_img_bytes", None)
+                        st.session_state.pop("i1688_img_name", None)
+                    if res.price_note:
+                        st.info(res.price_note)
+                    st.success("已写入下方表单，请核对大类/套装与 SKU 后再提交。")
+                    st.rerun()
+            if st.session_state.get("i1688_img_bytes"):
+                st.caption("✅ 已下载 1688 主图：提交时若未上传其它主图，将自动保存为商品主图。")
+            if st.button("清除 1688 填充字段", key="i1688_clear_btn"):
+                for k in (
+                    "add_sku",
+                    "add_name",
+                    "add_unit_price",
+                    "add_moq",
+                    "add_packaging_rate",
+                    "add_carton_l",
+                    "add_carton_w",
+                    "add_carton_h",
+                    "add_gw",
+                    "add_desc",
+                    "add_supplier1",
+                    "i1688_img_bytes",
+                    "i1688_img_name",
+                    "i1688_url_input",
+                ):
+                    st.session_state.pop(k, None)
+                st.rerun()
     
     with st.form("product_form"):
         col1, col2 = st.columns(2)
         
         with col1:
-            sku = st.text_input(
-                "SKU *",
-                value=existing_product["sku"] if existing_product else "",
-                placeholder="e.g., MPS-090226-01",
-                disabled=bool(existing_product)
-            )
-            
-            name = st.text_input(
-                "Product Name *",
-                value=existing_product["name"] if existing_product else "",
-                placeholder="e.g., Signature Metal Ballpoint Pen"
-            )
-            
-            unit_price = st.number_input(
-                "Unit Price (USD) *",
-                min_value=0.0,
-                value=float(existing_product["unit_price"]) if existing_product else 0.0,
-                step=0.01,
-                format="%.2f"
-            )
-            
-            moq = st.number_input(
-                "MOQ (Minimum Order Quantity)",
-                min_value=1,
-                value=int(existing_product.get("moq", 100)) if existing_product else 100,
-                step=1
-            )
+            if existing_product:
+                sku = st.text_input(
+                    "SKU *",
+                    value=existing_product["sku"],
+                    placeholder="e.g., MPS-090226-01",
+                    disabled=True,
+                )
+                name = st.text_input(
+                    "Product Name *",
+                    value=existing_product["name"],
+                    placeholder="e.g., Signature Metal Ballpoint Pen",
+                )
+                unit_price = st.number_input(
+                    "Unit Price (USD) *",
+                    min_value=0.0,
+                    value=float(existing_product["unit_price"]),
+                    step=0.01,
+                    format="%.2f",
+                )
+                moq = st.number_input(
+                    "MOQ (Minimum Order Quantity)",
+                    min_value=1,
+                    value=int(existing_product.get("moq", 100)),
+                    step=1,
+                )
+            else:
+                sku = st.text_input(
+                    "SKU *",
+                    key="add_sku",
+                    placeholder="e.g., MPS-090226-01 或 1688-商品ID",
+                )
+                name = st.text_input(
+                    "Product Name *",
+                    key="add_name",
+                    placeholder="e.g., Signature Metal Ballpoint Pen",
+                )
+                unit_price = st.number_input(
+                    "Unit Price (USD) *",
+                    min_value=0.0,
+                    value=0.0,
+                    step=0.01,
+                    format="%.2f",
+                    key="add_unit_price",
+                )
+                moq = st.number_input(
+                    "MOQ (Minimum Order Quantity)",
+                    min_value=1,
+                    value=100,
+                    step=1,
+                    key="add_moq",
+                )
         
         with col2:
             st.markdown("**Product Images**")
             image_file = st.file_uploader(
                 "Main Image (Used in PDF)",
                 type=["jpg", "jpeg", "png"],
-                help="This is the primary image shown in catalogs and quotations"
+                help="This is the primary image shown in catalogs and quotations",
             )
             
             if existing_product:
@@ -429,7 +517,7 @@ def show_product_form():
                 image_file_2 = st.file_uploader(
                     "Backup Image 2",
                     type=["jpg", "jpeg", "png"],
-                    help="Internal backup only"
+                    help="Internal backup only",
                 )
                 if existing_product:
                     img2 = get_image_path(existing_product.get("image_path_2"))
@@ -440,69 +528,120 @@ def show_product_form():
                 image_file_3 = st.file_uploader(
                     "Backup Image 3",
                     type=["jpg", "jpeg", "png"],
-                    help="Internal backup only"
+                    help="Internal backup only",
                 )
                 if existing_product:
                     img3 = get_image_path(existing_product.get("image_path_3"))
                     if img3:
                         st.image(img3, width=60, caption="Image 3")
             
-            packaging_rate = st.number_input(
-                "Packaging Rate (pcs/carton)",
-                min_value=1,
-                value=int(existing_product.get("packaging_rate", 200)) if existing_product else 200,
-                step=1
-            )
-            
-            st.markdown("**Carton Dimensions (cm)**")
-            col_l, col_w, col_h = st.columns(3)
-            with col_l:
-                carton_l = st.number_input("L", min_value=0.0, 
-                    value=float(existing_product.get("carton_l", 0)) if existing_product else 0.0, step=1.0)
-            with col_w:
-                carton_w = st.number_input("W", min_value=0.0, 
-                    value=float(existing_product.get("carton_w", 0)) if existing_product else 0.0, step=1.0)
-            with col_h:
-                carton_h = st.number_input("H", min_value=0.0, 
-                    value=float(existing_product.get("carton_h", 0)) if existing_product else 0.0, step=1.0)
-            
-            gw_per_ctn = st.number_input(
-                "G.W. per Carton (kg)",
-                min_value=0.0,
-                value=float(existing_product.get("gw_per_ctn", 0)) if existing_product else 0.0,
-                step=0.1,
-                format="%.2f"
-            )
+            if existing_product:
+                packaging_rate = st.number_input(
+                    "Packaging Rate (pcs/carton)",
+                    min_value=1,
+                    value=int(existing_product.get("packaging_rate", 200)),
+                    step=1,
+                )
+                st.markdown("**Carton Dimensions (cm)**")
+                col_l, col_w, col_h = st.columns(3)
+                with col_l:
+                    carton_l = st.number_input(
+                        "L",
+                        min_value=0.0,
+                        value=float(existing_product.get("carton_l", 0)),
+                        step=1.0,
+                    )
+                with col_w:
+                    carton_w = st.number_input(
+                        "W",
+                        min_value=0.0,
+                        value=float(existing_product.get("carton_w", 0)),
+                        step=1.0,
+                    )
+                with col_h:
+                    carton_h = st.number_input(
+                        "H",
+                        min_value=0.0,
+                        value=float(existing_product.get("carton_h", 0)),
+                        step=1.0,
+                    )
+                gw_per_ctn = st.number_input(
+                    "G.W. per Carton (kg)",
+                    min_value=0.0,
+                    value=float(existing_product.get("gw_per_ctn", 0)),
+                    step=0.1,
+                    format="%.2f",
+                )
+            else:
+                packaging_rate = st.number_input(
+                    "Packaging Rate (pcs/carton)",
+                    min_value=1,
+                    value=200,
+                    step=1,
+                    key="add_packaging_rate",
+                )
+                st.markdown("**Carton Dimensions (cm)**")
+                col_l, col_w, col_h = st.columns(3)
+                with col_l:
+                    carton_l = st.number_input("L", min_value=0.0, value=0.0, step=1.0, key="add_carton_l")
+                with col_w:
+                    carton_w = st.number_input("W", min_value=0.0, value=0.0, step=1.0, key="add_carton_w")
+                with col_h:
+                    carton_h = st.number_input("H", min_value=0.0, value=0.0, step=1.0, key="add_carton_h")
+                gw_per_ctn = st.number_input(
+                    "G.W. per Carton (kg)",
+                    min_value=0.0,
+                    value=0.0,
+                    step=0.1,
+                    format="%.2f",
+                    key="add_gw",
+                )
         
-        description = st.text_area(
-            "Description / Specifications *",
-            value=existing_product["description"] if existing_product else "",
-            height=150,
-            placeholder="Enter specifications, one per line:\nMaterial: Solid ABS\nInk: 1.0mm Black\nBranding: Silk Screen",
-            help="Enter product specifications, one per line. Each line will appear as a bullet point."
-        )
+        if existing_product:
+            description = st.text_area(
+                "Description / Specifications *",
+                value=existing_product["description"],
+                height=150,
+                placeholder="Enter specifications, one per line:\nMaterial: Solid ABS\nInk: 1.0mm Black\nBranding: Silk Screen",
+                help="Enter product specifications, one per line. Each line will appear as a bullet point.",
+            )
+        else:
+            description = st.text_area(
+                "Description / Specifications *",
+                key="add_desc",
+                height=150,
+                placeholder="Enter specifications, one per line:\nMaterial: Solid ABS\nInk: 1.0mm Black\nBranding: Silk Screen",
+                help="Enter product specifications, one per line. Each line will appear as a bullet point.",
+            )
         
         st.markdown("**Supplier Links (Internal Use Only)**")
         st.caption("These fields are for internal reference only and will NOT appear in catalogs or quotations.")
         
         sup_col1, sup_col2, sup_col3 = st.columns(3)
         with sup_col1:
-            supplier_link = st.text_input(
-                "Supplier Link 1",
-                value=existing_product.get("supplier_link", "") if existing_product else "",
-                placeholder="https://1688.com/..."
-            )
+            if existing_product:
+                supplier_link = st.text_input(
+                    "Supplier Link 1",
+                    value=existing_product.get("supplier_link", ""),
+                    placeholder="https://1688.com/...",
+                )
+            else:
+                supplier_link = st.text_input(
+                    "Supplier Link 1",
+                    key="add_supplier1",
+                    placeholder="https://1688.com/...",
+                )
         with sup_col2:
             supplier_link_2 = st.text_input(
                 "Supplier Link 2",
                 value=existing_product.get("supplier_link_2", "") if existing_product else "",
-                placeholder="https://1688.com/..."
+                placeholder="https://1688.com/...",
             )
         with sup_col3:
             supplier_link_3 = st.text_input(
                 "Supplier Link 3",
                 value=existing_product.get("supplier_link_3", "") if existing_product else "",
-                placeholder="https://1688.com/..."
+                placeholder="https://1688.com/...",
             )
         
         submit_btn = st.form_submit_button(
@@ -544,6 +683,20 @@ def show_product_form():
                     else:
                         st.error("Failed to update product")
                 else:
+                    prefill_path = None
+                    if (
+                        image_file is None
+                        and st.session_state.get("i1688_img_bytes")
+                        and sku
+                    ):
+                        try:
+                            prefill_path = dm.save_product_image_bytes(
+                                sku,
+                                st.session_state["i1688_img_bytes"],
+                                st.session_state.get("i1688_img_name", "1688_main.jpg"),
+                            )
+                        except Exception as ex:
+                            st.warning(f"1688 主图保存失败: {ex}")
                     success = dm.add_product(
                         sku=sku,
                         name=name,
@@ -562,9 +715,27 @@ def show_product_form():
                         gw_per_ctn=gw_per_ctn,
                         supplier_link=supplier_link,
                         supplier_link_2=supplier_link_2,
-                        supplier_link_3=supplier_link_3
+                        supplier_link_3=supplier_link_3,
+                        prefill_image_path=prefill_path,
                     )
                     if success:
+                        for k in (
+                            "add_sku",
+                            "add_name",
+                            "add_unit_price",
+                            "add_moq",
+                            "add_packaging_rate",
+                            "add_carton_l",
+                            "add_carton_w",
+                            "add_carton_h",
+                            "add_gw",
+                            "add_desc",
+                            "add_supplier1",
+                            "i1688_img_bytes",
+                            "i1688_img_name",
+                            "i1688_url_input",
+                        ):
+                            st.session_state.pop(k, None)
                         st.success(f"Product '{name}' added successfully!")
                         st.rerun()
                     else:

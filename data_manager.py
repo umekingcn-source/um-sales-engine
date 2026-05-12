@@ -173,6 +173,7 @@ def add_product(
     supplier_link_2: str = "",
     supplier_link_3: str = "",
     part: str = None,
+    prefill_image_path: str = None,
 ) -> bool:
     """Add a new product to the inventory."""
     df = get_products_df()
@@ -183,6 +184,8 @@ def add_product(
     image_path = ""
     if image_file is not None:
         image_path = save_product_image(sku, image_file)
+    elif prefill_image_path and isinstance(prefill_image_path, str) and prefill_image_path.strip():
+        image_path = prefill_image_path.strip()
     
     image_path_2 = ""
     if image_file_2 is not None:
@@ -363,6 +366,27 @@ def save_product_image(sku: str, uploaded_file) -> str:
     except Exception as e:
         print(f"Image optimization failed: {e}")
     
+    return f"assets/images/{filename}"
+
+
+def save_product_image_bytes(sku: str, data: bytes, filename_hint: str = "import.jpg") -> str:
+    """Save raw image bytes (e.g. from 1688) and return relative assets path."""
+    init_directories()
+    ext = os.path.splitext(filename_hint)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+        ext = ".jpg"
+    safe_sku = "".join(c if c.isalnum() or c in "-_" else "_" for c in sku)
+    filename = f"{safe_sku}{ext}"
+    filepath = os.path.join(IMAGES_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(data)
+    try:
+        img = Image.open(filepath)
+        max_size = (800, 800)
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        img.save(filepath, quality=90, optimize=True)
+    except Exception as e:
+        print(f"Image optimization failed: {e}")
     return f"assets/images/{filename}"
 
 
